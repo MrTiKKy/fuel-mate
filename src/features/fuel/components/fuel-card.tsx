@@ -41,7 +41,7 @@ export function FuelCard({ entry, onAction }: FuelCardProps) {
       className="animate-[slide-up_0.35s_cubic-bezier(0.16,1,0.3,1)]"
     >
       <article
-        className="rounded-3xl border border-border/60 bg-card/90 p-4 backdrop-blur-md active:scale-[0.99]"
+        className="rounded-3xl border border-border/60 bg-surface-elevated p-4 active:scale-[0.99]"
         {...longPress}
       >
         <div className="flex items-start justify-between gap-3">

@@ -48,9 +48,9 @@ export function SwipeableRow({
   }
 
   return (
-    <div className={cn("relative overflow-hidden rounded-3xl", className)}>
+    <div className={cn("relative isolate overflow-hidden rounded-3xl", className)}>
       <div
-        className="absolute inset-y-0 right-0 flex"
+        className="absolute inset-y-0 right-0 z-0 flex"
         style={{ width: REVEAL_WIDTH }}
         aria-hidden={!open}
       >
@@ -66,7 +66,7 @@ export function SwipeableRow({
         <ActionButton
           label="Duplicate"
           icon={<Copy className="size-4" />}
-          className="bg-primary/90 text-primary-foreground"
+          className="bg-primary text-primary-foreground"
           onClick={() => {
             close();
             onAction("duplicate");
@@ -83,6 +83,7 @@ export function SwipeableRow({
         />
       </div>
 
+      {/* Opaque foreground so action colors never bleed through until swipe */}
       <motion.div
         style={{ x }}
         drag="x"
@@ -114,7 +115,7 @@ export function SwipeableRow({
             close();
           }
         }}
-        className="relative z-10 touch-pan-y will-change-transform"
+        className="relative z-10 touch-pan-y will-change-transform rounded-3xl bg-background"
       >
         {children}
       </motion.div>

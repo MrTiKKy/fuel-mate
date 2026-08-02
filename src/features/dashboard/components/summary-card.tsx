@@ -19,13 +19,21 @@ export function SummaryCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-4",
+        "group relative overflow-hidden rounded-2xl border border-border/70 bg-card/80 p-4 backdrop-blur-xl",
         "transition-all duration-200 hover:border-primary/30 active:scale-[0.98]",
         "animate-[slide-up_0.4s_cubic-bezier(0.16,1,0.3,1)]",
         className,
       )}
     >
-      <div className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/5 transition-transform duration-300 group-hover:scale-110" />
+      {/* Soft teal corner wash — no hard circle edges */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_80%_at_100%_0%,oklch(0.74_0.12_195_/_0.16),transparent_58%)] opacity-80 transition-opacity duration-300 group-hover:opacity-100"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-10 size-28 bg-primary/20 blur-3xl"
+      />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">

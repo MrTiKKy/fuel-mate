@@ -44,7 +44,7 @@ export function SavedCalculationCard({
       <motion.article
         initial={reduce ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl border border-border/60 bg-card/90 p-4 backdrop-blur-md"
+        className="rounded-3xl border border-border/60 bg-surface-elevated p-4"
       >
         <button
           type="button"

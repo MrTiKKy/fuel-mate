@@ -70,7 +70,7 @@ export function ServiceCard({
     <SwipeableRow onAction={(action) => onAction(record, action)}>
       <article
         className={cn(
-          "rounded-3xl border border-border/60 bg-card/90 p-4 backdrop-blur-md",
+          "rounded-3xl border border-border/60 bg-surface-elevated p-4",
           "animate-[slide-up_0.35s_cubic-bezier(0.16,1,0.3,1)]",
           "touch-manipulation select-none active:scale-[0.99]",
         )}

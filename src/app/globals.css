@@ -299,13 +299,23 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(
-      135deg,
-      oklch(1 0 0 / 0.08),
-      transparent 42%,
-      transparent 58%,
-      oklch(1 0 0 / 0.03)
-    );
+    /* Soft corner glow — elliptical wash, no hard circular blobs */
+    background:
+      radial-gradient(
+        ellipse 85% 70% at 100% 0%,
+        var(--glass-highlight),
+        transparent 58%
+      ),
+      radial-gradient(
+        ellipse 60% 50% at 0% 100%,
+        oklch(1 0 0 / 0.04),
+        transparent 55%
+      ),
+      linear-gradient(
+        135deg,
+        oklch(1 0 0 / 0.06),
+        transparent 45%
+      );
   }
 
   .touch-target {

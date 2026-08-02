@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 type SaveCalculationDialogProps = {
   open: boolean;
@@ -57,7 +58,18 @@ export function SaveCalculationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100%-2rem)] rounded-3xl sm:max-w-md">
+      <DialogContent
+        className="max-w-[calc(100%-2rem)] rounded-3xl sm:max-w-md"
+        onOpenAutoFocus={(event) => {
+          // Keep focus in the name field without scrolling the page under the dialog.
+          const root = event.currentTarget as HTMLElement | null;
+          const target = root?.querySelector<HTMLElement>("#saved-calc-name");
+          if (target) {
+            event.preventDefault();
+            target.focus({ preventScroll: true });
+          }
+        }}
+      >
         <form onSubmit={(event) => void handleSubmit(event)}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -90,12 +102,18 @@ export function SaveCalculationDialog({
               }}
               placeholder="e.g. Brașov weekend"
               className="h-11 rounded-2xl"
-              autoFocus
               maxLength={60}
             />
-            {error ? (
-              <p className="text-xs text-destructive">{error}</p>
-            ) : null}
+            {/* Reserve error line height so validation does not resize the dialog */}
+            <p
+              className={cn(
+                "min-h-4 text-xs transition-opacity",
+                error ? "text-destructive opacity-100" : "opacity-0",
+              )}
+              aria-live="polite"
+            >
+              {error ?? "\u00a0"}
+            </p>
           </div>
 
           <DialogFooter className="mt-6 gap-2 sm:gap-2">

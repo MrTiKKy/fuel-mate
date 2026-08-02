@@ -223,6 +223,8 @@
   html {
     @apply scroll-smooth antialiased;
     -webkit-tap-highlight-color: transparent;
+    /* Keep layout width stable when dialogs lock body scroll (scrollbar hide/show). */
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -231,6 +233,12 @@
     overscroll-behavior-y: none;
     background-image: var(--gradient-mesh);
     background-attachment: fixed;
+  }
+
+  /* With scrollbar-gutter: stable, Radix padding compensation would double-shift. */
+  body[data-scroll-locked] {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
   }
 
   ::selection {

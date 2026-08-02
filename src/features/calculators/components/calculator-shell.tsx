@@ -122,24 +122,30 @@ export function CalculatorShell({
   return (
     <>
       <AppHeader title={title} subtitle={subtitle} />
-      <PageContainer className="space-y-5 pb-8">
-        <GlassCard className="space-y-3 p-4 md:p-5">{children}</GlassCard>
+      <PageContainer className="space-y-5 overflow-x-hidden pb-8">
+        <GlassCard className="w-full space-y-3 p-4 md:p-5">{children}</GlassCard>
 
         <motion.div
-          layout={!reduce}
-          className="space-y-3"
+          className="w-full space-y-3"
           initial={reduce ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05, duration: 0.3 }}
         >
-          <div className="flex items-center justify-between gap-3 px-1">
-            <div className="min-w-0">
+          <div className="flex items-start justify-between gap-3 px-1">
+            <div className="min-w-0 flex-1">
               <h2 className="text-sm font-semibold tracking-tight">Results</h2>
-              {activeSavedName ? (
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                  Saved as {activeSavedName}
-                </p>
-              ) : null}
+              {/* Reserved line so “Saved as …” does not change header height */}
+              <p
+                className={cn(
+                  "mt-0.5 h-4 truncate text-[11px] text-muted-foreground transition-opacity duration-200",
+                  activeSavedName ? "opacity-100" : "opacity-0",
+                )}
+                aria-hidden={!activeSavedName}
+              >
+                {activeSavedName
+                  ? `Saved as ${activeSavedName}`
+                  : "Saved as placeholder"}
+              </p>
             </div>
             <div className="flex shrink-0 gap-2">
               <Button
@@ -147,16 +153,16 @@ export function CalculatorShell({
                 variant={isSaved ? "default" : "outline"}
                 size="sm"
                 className={cn(
-                  "h-10 rounded-xl px-3",
+                  "h-10 w-[5.75rem] rounded-xl px-3",
                   isSaved && "bg-primary text-primary-foreground",
                 )}
                 onClick={openSave}
                 disabled={!hasResults}
-                aria-label={isSaved ? "Update saved calculation" : "Save calculation"}
+                aria-label={
+                  isSaved ? "Update saved calculation" : "Save calculation"
+                }
               >
-                <Star
-                  className={cn("size-3.5", isSaved && "fill-current")}
-                />
+                <Star className={cn("size-3.5", isSaved && "fill-current")} />
                 {isSaved ? "Update" : "Save"}
               </Button>
               <Button
@@ -187,7 +193,7 @@ export function CalculatorShell({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid w-full gap-3 sm:grid-cols-2">
             {results.map((row, index) => (
               <ResultCard
                 key={`${row.label}-${index}`}
@@ -232,39 +238,47 @@ function ResultCard({
 }) {
   const reduce = useReducedMotion();
   const display = useMemo(() => value, [value]);
+  const showStar = Boolean(emphasize);
 
   return (
     <motion.div
-      layout={!reduce}
-      initial={reduce ? false : { opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={reduce ? false : { opacity: 0, transform: "translateY(6px)" }}
+      animate={{ opacity: 1, transform: "translateY(0px)" }}
       transition={{ delay, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "glass-card relative rounded-3xl p-4",
+        "glass-card relative w-full min-w-0 rounded-3xl p-4",
         emphasize && "glass-card-highlight",
       )}
     >
-      {onStar ? (
+      {/* Always reserve star slot on emphasized cards to keep width stable */}
+      {showStar ? (
         <button
           type="button"
           onClick={onStar}
+          disabled={!onStar}
           className={cn(
-            "absolute top-3 right-3 flex size-9 items-center justify-center rounded-xl transition-colors",
+            "absolute top-3 right-3 flex size-9 items-center justify-center rounded-xl transition-[color,background-color,transform] duration-200",
             "text-muted-foreground hover:bg-primary/10 hover:text-primary active:scale-95",
             isSaved && "text-primary",
+            !onStar && "pointer-events-none opacity-40",
           )}
           aria-label={isSaved ? "Update saved calculation" : "Save calculation"}
         >
           <Star className={cn("size-4", isSaved && "fill-current")} />
         </button>
       ) : null}
-      <p className="pr-10 text-xs font-medium tracking-wide text-muted-foreground">
+      <p
+        className={cn(
+          "text-xs font-medium tracking-wide text-muted-foreground",
+          showStar && "pr-10",
+        )}
+      >
         {label}
       </p>
       <motion.p
         key={display}
-        initial={reduce ? false : { opacity: 0.4, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={reduce ? false : { opacity: 0.4, transform: "translateY(4px)" }}
+        animate={{ opacity: 1, transform: "translateY(0px)" }}
         className={cn(
           "mt-1.5 text-2xl font-semibold tracking-tight tabular-nums",
           emphasize && "text-primary",

@@ -433,6 +433,12 @@ export function SettingsPageClient() {
                 </span>
               </SettingsRow>
               <SettingsDivider />
+              <SettingsRow label="Saved calculations">
+                <span className="text-sm tabular-nums text-muted-foreground">
+                  {stats?.savedCalculations ?? 0}
+                </span>
+              </SettingsRow>
+              <SettingsDivider />
               <SettingsRow label="Database size">
                 <span className="flex items-center gap-2 text-sm tabular-nums text-muted-foreground">
                   <Database className="size-3.5 opacity-70" />

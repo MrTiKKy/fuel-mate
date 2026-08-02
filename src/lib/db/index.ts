@@ -4,13 +4,14 @@ import type {
   Car,
   DocumentFileBlob,
   FuelEntry,
+  SavedCalculation,
   ServiceRecord,
   VehicleDocument,
 } from "@/types";
 
 /** Keep legacy DB name so existing local data continues to work. */
 export const DB_NAME = "car-companion";
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const STORES = {
   cars: "cars",
@@ -18,6 +19,7 @@ export const STORES = {
   serviceRecords: "serviceRecords",
   documents: "documents",
   documentFiles: "documentFiles",
+  savedCalculations: "savedCalculations",
   settings: "settings",
 } as const;
 
@@ -75,6 +77,14 @@ interface GaragePlusDB extends DBSchema {
     key: string;
     value: DocumentFileBlob;
     indexes: { "by-document": string };
+  };
+  savedCalculations: {
+    key: string;
+    value: SavedCalculation;
+    indexes: {
+      "by-type": string;
+      "by-updated": string;
+    };
   };
   settings: {
     key: string;
@@ -134,6 +144,14 @@ export function getDatabase(): Promise<IDBPDatabase<GaragePlusDB>> {
             keyPath: "id",
           });
           files.createIndex("by-document", "documentId");
+        }
+
+        if (!db.objectStoreNames.contains(STORES.savedCalculations)) {
+          const saved = db.createObjectStore(STORES.savedCalculations, {
+            keyPath: "id",
+          });
+          saved.createIndex("by-type", "calculatorType");
+          saved.createIndex("by-updated", "updatedAt");
         }
 
         if (!db.objectStoreNames.contains(STORES.settings)) {

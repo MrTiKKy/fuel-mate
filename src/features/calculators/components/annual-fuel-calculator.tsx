@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { FloatingField } from "@/components/shared/floating-field";
 import { CalculatorShell } from "@/features/calculators/components/calculator-shell";
-import { useCalculatorFields } from "@/features/calculators/hooks/use-calculator-fields";
+import { useCalculatorSession } from "@/features/calculators/hooks/use-calculator-session";
 import {
   calcAnnualFuel,
   formatCalcCurrency,
@@ -19,7 +19,15 @@ const INITIAL = {
 };
 
 export function AnnualFuelCalculator() {
-  const { values, setField, reset, hasInput } = useCalculatorFields(INITIAL);
+  const {
+    values,
+    setField,
+    reset,
+    hasInput,
+    activeSavedId,
+    activeSavedName,
+    markSaved,
+  } = useCalculatorSession("annual-fuel", INITIAL);
 
   const results = useMemo(() => {
     const distancePerYear = parsePositiveRequired(values.distancePerYear);
@@ -65,10 +73,15 @@ export function AnnualFuelCalculator() {
     <CalculatorShell
       title="Annual fuel cost"
       subtitle="Project yearly fuel spend"
+      calculatorType="annual-fuel"
+      inputs={values}
       results={results}
       onReset={reset}
       canReset={hasInput}
       clipboardTitle="Annual fuel cost"
+      activeSavedId={activeSavedId}
+      activeSavedName={activeSavedName}
+      onSaved={markSaved}
     >
       <FloatingField
         label="Distance per year"

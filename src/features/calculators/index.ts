@@ -1,4 +1,5 @@
 export { CalculatorsHub } from "@/features/calculators/components/calculators-hub";
+export { SavedCalculationsPageClient } from "@/features/calculators/components/saved-calculations-page-client";
 export { FuelCostCalculator } from "@/features/calculators/components/fuel-cost-calculator";
 export { TripSplitCalculator } from "@/features/calculators/components/trip-split-calculator";
 export { AnnualFuelCalculator } from "@/features/calculators/components/annual-fuel-calculator";
@@ -8,3 +9,4 @@ export { CostPerKmCalculator } from "@/features/calculators/components/cost-per-
 export { MaintenanceCostCalculator } from "@/features/calculators/components/maintenance-cost-calculator";
 export { CALCULATORS } from "@/features/calculators/constants";
 export * from "@/features/calculators/utils";
+export * from "@/features/calculators/repository";

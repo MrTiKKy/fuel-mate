@@ -1,6 +1,6 @@
 "use client";
 
-import { Calculator } from "lucide-react";
+import { Calculator, Star } from "lucide-react";
 import { AppHeader } from "@/components/layout/app-header";
 import { FeatureCard } from "@/components/shared/feature-card";
 import { GlassCard } from "@/components/shared/glass-card";
@@ -19,6 +19,13 @@ export function CalculatorsHub() {
         subtitle="Estimate costs before you drive"
       />
       <PageContainer className="space-y-4">
+        <FeatureCard
+          title="Saved calculations"
+          description="Named trips and estimates — reopen anytime"
+          href="/calculators/saved"
+          icon={Star}
+        />
+
         <MotionList className="grid gap-3">
           {CALCULATORS.map((item) => (
             <MotionItem key={item.id}>
@@ -37,7 +44,7 @@ export function CalculatorsHub() {
             <Calculator className="size-4" strokeWidth={1.75} />
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            {CALCULATORS_HUB_HINT}
+            {CALCULATORS_HUB_HINT} Tap ⭐ on results to save them.
           </p>
         </GlassCard>
       </PageContainer>

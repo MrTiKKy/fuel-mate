@@ -1,21 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
-import { Copy, RotateCcw } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Copy, RotateCcw, Star } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/layout/app-header";
 import { GlassCard } from "@/components/shared/glass-card";
 import { PageContainer } from "@/components/shared/page-container";
 import { Button } from "@/components/ui/button";
+import { SaveCalculationDialog } from "@/features/calculators/components/save-calculation-dialog";
+import type { CalculatorId } from "@/features/calculators/constants";
+import * as savedRepo from "@/features/calculators/repository";
 import { buildResultsClipboard } from "@/features/calculators/utils";
 import { cn } from "@/lib/utils";
+import type { SavedCalculationResult } from "@/types";
 
-type ResultRow = {
-  label: string;
-  value: string;
-  emphasize?: boolean;
-};
+export type ResultRow = SavedCalculationResult;
 
 type CalculatorShellProps = {
   title: string;
@@ -25,6 +25,11 @@ type CalculatorShellProps = {
   onReset: () => void;
   canReset: boolean;
   clipboardTitle: string;
+  calculatorType: CalculatorId;
+  inputs: Record<string, string>;
+  activeSavedId?: string | null;
+  activeSavedName?: string | null;
+  onSaved?: (id: string, name: string) => void;
 };
 
 export function CalculatorShell({
@@ -35,9 +40,17 @@ export function CalculatorShell({
   onReset,
   canReset,
   clipboardTitle,
+  calculatorType,
+  inputs,
+  activeSavedId = null,
+  activeSavedName = null,
+  onSaved,
 }: CalculatorShellProps) {
   const reduce = useReducedMotion();
   const hasResults = results.some((row) => row.value !== "—");
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const isSaved = Boolean(activeSavedId);
 
   const copyResults = async () => {
     if (!hasResults) {
@@ -61,6 +74,51 @@ export function CalculatorShell({
     }
   };
 
+  const openSave = () => {
+    if (!hasResults) {
+      toast.error("Nothing to save yet", {
+        description: "Enter values to generate results first.",
+      });
+      return;
+    }
+    setSaveOpen(true);
+  };
+
+  const handleSave = async (name: string) => {
+    setIsSaving(true);
+    try {
+      if (activeSavedId) {
+        const updated = await savedRepo.updateSavedCalculation(activeSavedId, {
+          name,
+          inputs,
+          results,
+        });
+        onSaved?.(updated.id, updated.name);
+        toast.success("Calculation updated", {
+          description: updated.name,
+        });
+      } else {
+        const created = await savedRepo.createSavedCalculation({
+          calculatorType,
+          name,
+          inputs,
+          results,
+        });
+        onSaved?.(created.id, created.name);
+        toast.success("Calculation saved", {
+          description: created.name,
+        });
+      }
+      setSaveOpen(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not save calculation",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <>
       <AppHeader title={title} subtitle={subtitle} />
@@ -74,50 +132,85 @@ export function CalculatorShell({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05, duration: 0.3 }}
         >
-            <div className="flex items-center justify-between gap-3 px-1">
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div className="min-w-0">
               <h2 className="text-sm font-semibold tracking-tight">Results</h2>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-10 rounded-xl px-3"
-                  onClick={onReset}
-                  disabled={!canReset}
-                  aria-label="Reset calculator"
-                >
-                  <RotateCcw className="size-3.5" />
-                  Reset
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="h-10 rounded-xl px-3"
-                  onClick={() => {
-                    void copyResults();
-                  }}
-                  aria-label="Copy results"
-                >
-                  <Copy className="size-3.5" />
-                  Copy
-                </Button>
-              </div>
+              {activeSavedName ? (
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                  Saved as {activeSavedName}
+                </p>
+              ) : null}
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {results.map((row, index) => (
-                <ResultCard
-                  key={row.label}
-                  label={row.label}
-                  value={row.value}
-                  emphasize={row.emphasize}
-                  delay={index * 0.04}
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                variant={isSaved ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "h-10 rounded-xl px-3",
+                  isSaved && "bg-primary text-primary-foreground",
+                )}
+                onClick={openSave}
+                disabled={!hasResults}
+                aria-label={isSaved ? "Update saved calculation" : "Save calculation"}
+              >
+                <Star
+                  className={cn("size-3.5", isSaved && "fill-current")}
                 />
-              ))}
+                {isSaved ? "Update" : "Save"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-10 rounded-xl px-3"
+                onClick={onReset}
+                disabled={!canReset}
+                aria-label="Reset calculator"
+              >
+                <RotateCcw className="size-3.5" />
+                Reset
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-10 rounded-xl px-3"
+                onClick={() => {
+                  void copyResults();
+                }}
+                aria-label="Copy results"
+              >
+                <Copy className="size-3.5" />
+                Copy
+              </Button>
             </div>
-          </motion.div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {results.map((row, index) => (
+              <ResultCard
+                key={`${row.label}-${index}`}
+                label={row.label}
+                value={row.value}
+                emphasize={row.emphasize}
+                delay={index * 0.04}
+                onStar={hasResults && row.emphasize ? openSave : undefined}
+                isSaved={isSaved}
+              />
+            ))}
+          </div>
+        </motion.div>
       </PageContainer>
+
+      <SaveCalculationDialog
+        open={saveOpen}
+        onOpenChange={setSaveOpen}
+        defaultName={activeSavedName ?? ""}
+        mode={isSaved ? "update" : "save"}
+        isSubmitting={isSaving}
+        onConfirm={handleSave}
+      />
     </>
   );
 }
@@ -127,11 +220,15 @@ function ResultCard({
   value,
   emphasize,
   delay,
+  onStar,
+  isSaved,
 }: {
   label: string;
   value: string;
   emphasize?: boolean;
   delay: number;
+  onStar?: () => void;
+  isSaved?: boolean;
 }) {
   const reduce = useReducedMotion();
   const display = useMemo(() => value, [value]);
@@ -143,11 +240,25 @@ function ResultCard({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "glass-card rounded-3xl p-4",
+        "glass-card relative rounded-3xl p-4",
         emphasize && "glass-card-highlight",
       )}
     >
-      <p className="text-xs font-medium tracking-wide text-muted-foreground">
+      {onStar ? (
+        <button
+          type="button"
+          onClick={onStar}
+          className={cn(
+            "absolute top-3 right-3 flex size-9 items-center justify-center rounded-xl transition-colors",
+            "text-muted-foreground hover:bg-primary/10 hover:text-primary active:scale-95",
+            isSaved && "text-primary",
+          )}
+          aria-label={isSaved ? "Update saved calculation" : "Save calculation"}
+        >
+          <Star className={cn("size-4", isSaved && "fill-current")} />
+        </button>
+      ) : null}
+      <p className="pr-10 text-xs font-medium tracking-wide text-muted-foreground">
         {label}
       </p>
       <motion.p

@@ -33,15 +33,23 @@ async function blobToBase64(blob: Blob): Promise<string> {
 
 export async function createBackupPayload(): Promise<BackupPayload> {
   const db = await getDatabase();
-  const [cars, fuelEntries, serviceRecords, documents, files, settings] =
-    await Promise.all([
-      db.getAll(STORES.cars),
-      db.getAll(STORES.fuelEntries),
-      db.getAll(STORES.serviceRecords),
-      db.getAll(STORES.documents),
-      db.getAll(STORES.documentFiles),
-      getAppSettings(),
-    ]);
+  const [
+    cars,
+    fuelEntries,
+    serviceRecords,
+    documents,
+    files,
+    savedCalculations,
+    settings,
+  ] = await Promise.all([
+    db.getAll(STORES.cars),
+    db.getAll(STORES.fuelEntries),
+    db.getAll(STORES.serviceRecords),
+    db.getAll(STORES.documents),
+    db.getAll(STORES.documentFiles),
+    db.getAll(STORES.savedCalculations),
+    getAppSettings(),
+  ]);
 
   const documentFiles: BackupDocumentFile[] = await Promise.all(
     files.map(async (file) => ({
@@ -72,6 +80,7 @@ export async function createBackupPayload(): Promise<BackupPayload> {
     serviceRecords,
     documents,
     documentFiles,
+    savedCalculations,
     settings,
   };
 }

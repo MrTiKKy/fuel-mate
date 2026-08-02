@@ -1,6 +1,6 @@
 export const APP_VERSION = "1.2.0";
 export const BUILD_VERSION = "2026.08.02";
-export const BACKUP_SCHEMA_VERSION = 4;
+export const BACKUP_SCHEMA_VERSION = 5;
 export const APP_NAME = "Garage+";
 export const APP_DEVELOPER = "Garage+ Team";
 export const GITHUB_URL = "https://github.com/";

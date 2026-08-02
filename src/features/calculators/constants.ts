@@ -9,15 +9,9 @@ import {
   Route,
   Wrench,
 } from "lucide-react";
+import type { CalculatorType } from "@/types";
 
-export type CalculatorId =
-  | "fuel-cost"
-  | "trip-split"
-  | "annual-fuel"
-  | "fuel-needed"
-  | "tank-fill"
-  | "cost-per-km"
-  | "maintenance";
+export type CalculatorId = CalculatorType;
 
 export type CalculatorMeta = {
   id: CalculatorId;
@@ -26,6 +20,17 @@ export type CalculatorMeta = {
   href: string;
   icon: LucideIcon;
 };
+
+export function getCalculatorMeta(id: CalculatorId): CalculatorMeta | undefined {
+  return CALCULATORS.find((item) => item.id === id);
+}
+
+export function getCalculatorHref(id: CalculatorId, savedId?: string): string {
+  const meta = getCalculatorMeta(id);
+  const base = meta?.href ?? "/calculators";
+  if (!savedId) return base;
+  return `${base}?saved=${encodeURIComponent(savedId)}`;
+}
 
 export const CALCULATORS: CalculatorMeta[] = [
   {

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { FloatingField } from "@/components/shared/floating-field";
 import { CalculatorShell } from "@/features/calculators/components/calculator-shell";
-import { useCalculatorFields } from "@/features/calculators/hooks/use-calculator-fields";
+import { useCalculatorSession } from "@/features/calculators/hooks/use-calculator-session";
 import {
   calcCostPerKm,
   formatCalcCurrency,
@@ -17,7 +17,15 @@ const INITIAL = {
 };
 
 export function CostPerKmCalculator() {
-  const { values, setField, reset, hasInput } = useCalculatorFields(INITIAL);
+  const {
+    values,
+    setField,
+    reset,
+    hasInput,
+    activeSavedId,
+    activeSavedName,
+    markSaved,
+  } = useCalculatorSession("cost-per-km", INITIAL);
 
   const results = useMemo(() => {
     const consumption = parsePositiveRequired(values.consumption);
@@ -48,10 +56,15 @@ export function CostPerKmCalculator() {
     <CalculatorShell
       title="Cost per kilometer"
       subtitle="Running cost from consumption"
+      calculatorType="cost-per-km"
+      inputs={values}
       results={results}
       onReset={reset}
       canReset={hasInput}
       clipboardTitle="Cost per kilometer"
+      activeSavedId={activeSavedId}
+      activeSavedName={activeSavedName}
+      onSaved={markSaved}
     >
       <FloatingField
         label="Consumption"

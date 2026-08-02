@@ -7,6 +7,7 @@ import {
   Home,
   Lightbulb,
   Settings,
+  Star,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -69,6 +70,12 @@ export const MORE_MENU_ITEMS: NavItem[] = [
     href: "/calculators",
     icon: Calculator,
     description: "Fuel, trip, ownership, and tank tools",
+  },
+  {
+    title: "Saved calculations",
+    href: "/calculators/saved",
+    icon: Star,
+    description: "Named trip and cost estimates",
   },
   {
     title: "Service",

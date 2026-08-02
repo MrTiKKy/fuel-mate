@@ -280,6 +280,36 @@ export type InsightsUnlockStatus = {
   reason?: string;
 };
 
+export type CalculatorType =
+  | "fuel-cost"
+  | "trip-split"
+  | "annual-fuel"
+  | "fuel-needed"
+  | "tank-fill"
+  | "cost-per-km"
+  | "maintenance";
+
+export type SavedCalculationResult = {
+  label: string;
+  value: string;
+  emphasize?: boolean;
+};
+
+export type SavedCalculation = {
+  id: UUID;
+  calculatorType: CalculatorType;
+  name: string;
+  inputs: Record<string, string>;
+  results: SavedCalculationResult[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateSavedCalculationInput = Omit<
+  SavedCalculation,
+  "id" | "createdAt" | "updatedAt"
+>;
+
 export type ConsumptionUnit = "l_100km" | "mpg_uk" | "mpg_us";
 
 export type AccentColor = "teal" | "blue" | "green" | "orange";
@@ -335,6 +365,7 @@ export type BackupPayload = {
   serviceRecords: ServiceRecord[];
   documents: VehicleDocument[];
   documentFiles?: BackupDocumentFile[];
+  savedCalculations?: SavedCalculation[];
   settings: AppSettings;
 };
 
@@ -343,6 +374,7 @@ export type ImportSummary = {
   fuelEntries: number;
   serviceRecords: number;
   documents: number;
+  savedCalculations: number;
   settings: boolean;
 };
 
@@ -351,6 +383,7 @@ export type DatabaseStats = {
   fuelEntries: number;
   serviceRecords: number;
   documents: number;
+  savedCalculations: number;
   estimatedSizeBytes: number;
   lastBackupAt?: string;
   status: "ok" | "empty" | "error";

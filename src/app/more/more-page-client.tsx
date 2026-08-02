@@ -6,6 +6,7 @@ import {
   HardDrive,
   Lightbulb,
   Settings,
+  Star,
   Wrench,
 } from "lucide-react";
 import { AppHeader } from "@/components/layout/app-header";
@@ -47,6 +48,12 @@ export function MorePageClient() {
               description="Fuel, trip, ownership, and tank tools"
               href="/calculators"
               icon={Calculator}
+            />
+            <FeatureCard
+              title="Saved calculations"
+              description="Named trips and estimates you can reopen"
+              href="/calculators/saved"
+              icon={Star}
             />
           </div>
         </Section>

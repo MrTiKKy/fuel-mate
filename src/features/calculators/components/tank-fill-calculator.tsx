@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { FloatingField } from "@/components/shared/floating-field";
 import { CalculatorShell } from "@/features/calculators/components/calculator-shell";
-import { useCalculatorFields } from "@/features/calculators/hooks/use-calculator-fields";
+import { useCalculatorSession } from "@/features/calculators/hooks/use-calculator-session";
 import {
   calcTankFill,
   formatCalcCurrency,
@@ -19,7 +19,15 @@ const INITIAL = {
 };
 
 export function TankFillCalculator() {
-  const { values, setField, reset, hasInput } = useCalculatorFields(INITIAL);
+  const {
+    values,
+    setField,
+    reset,
+    hasInput,
+    activeSavedId,
+    activeSavedName,
+    markSaved,
+  } = useCalculatorSession("tank-fill", INITIAL);
 
   const results = useMemo(() => {
     const tankCapacity = parsePositiveRequired(values.tankCapacity);
@@ -61,10 +69,15 @@ export function TankFillCalculator() {
     <CalculatorShell
       title="Tank fill"
       subtitle="Top-up volume and cost"
+      calculatorType="tank-fill"
+      inputs={values}
       results={results}
       onReset={reset}
       canReset={hasInput}
       clipboardTitle="Tank fill"
+      activeSavedId={activeSavedId}
+      activeSavedName={activeSavedName}
+      onSaved={markSaved}
     >
       <FloatingField
         label="Tank capacity"

@@ -26,6 +26,7 @@ export function summarizeBackup(backup: ValidatedBackup): ImportSummary {
     fuelEntries: backup.fuelEntries.length,
     serviceRecords: backup.serviceRecords.length,
     documents: backup.documents.length,
+    savedCalculations: backup.savedCalculations.length,
     settings: Boolean(backup.settings),
   };
 }
@@ -50,6 +51,7 @@ export async function importBackup(
       STORES.serviceRecords,
       STORES.documents,
       STORES.documentFiles,
+      STORES.savedCalculations,
       STORES.settings,
     ],
     "readwrite",
@@ -61,6 +63,7 @@ export async function importBackup(
     tx.objectStore(STORES.serviceRecords).clear(),
     tx.objectStore(STORES.documents).clear(),
     tx.objectStore(STORES.documentFiles).clear(),
+    tx.objectStore(STORES.savedCalculations).clear(),
   ]);
 
   for (const car of backup.cars) {
@@ -86,6 +89,9 @@ export async function importBackup(
       blob: base64ToBlob(file.dataBase64, file.mimeType),
     };
     await tx.objectStore(STORES.documentFiles).put(record);
+  }
+  for (const saved of backup.savedCalculations) {
+    await tx.objectStore(STORES.savedCalculations).put(saved as never);
   }
 
   const settings: AppSettings = {

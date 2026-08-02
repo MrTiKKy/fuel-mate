@@ -44,6 +44,10 @@ export function ImportSummaryDialog({
           <SummaryItem label="Services" value={summary.serviceRecords} />
           <SummaryItem label="Documents" value={summary.documents} />
           <SummaryItem
+            label="Saved calcs"
+            value={summary.savedCalculations}
+          />
+          <SummaryItem
             label="Settings"
             value={summary.settings ? "Yes" : "No"}
           />

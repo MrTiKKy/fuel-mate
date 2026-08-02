@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { FloatingField } from "@/components/shared/floating-field";
 import { CalculatorShell } from "@/features/calculators/components/calculator-shell";
-import { useCalculatorFields } from "@/features/calculators/hooks/use-calculator-fields";
+import { useCalculatorSession } from "@/features/calculators/hooks/use-calculator-session";
 import {
   calcFuelCost,
   formatCalcCurrency,
@@ -19,7 +19,15 @@ const INITIAL = {
 };
 
 export function FuelCostCalculator() {
-  const { values, setField, reset, hasInput } = useCalculatorFields(INITIAL);
+  const {
+    values,
+    setField,
+    reset,
+    hasInput,
+    activeSavedId,
+    activeSavedName,
+    markSaved,
+  } = useCalculatorSession("fuel-cost", INITIAL);
 
   const results = useMemo(() => {
     const distance = parsePositiveRequired(values.distance);
@@ -56,10 +64,15 @@ export function FuelCostCalculator() {
     <CalculatorShell
       title="Fuel cost"
       subtitle="Estimate fuel and trip cost"
+      calculatorType="fuel-cost"
+      inputs={values}
       results={results}
       onReset={reset}
       canReset={hasInput}
       clipboardTitle="Fuel cost calculator"
+      activeSavedId={activeSavedId}
+      activeSavedName={activeSavedName}
+      onSaved={markSaved}
     >
       <FloatingField
         label="Distance"

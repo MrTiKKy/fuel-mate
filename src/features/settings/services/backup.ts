@@ -20,6 +20,7 @@ export async function resetDatabase(): Promise<void> {
       STORES.serviceRecords,
       STORES.documents,
       STORES.documentFiles,
+      STORES.savedCalculations,
       STORES.settings,
     ],
     "readwrite",
@@ -30,6 +31,7 @@ export async function resetDatabase(): Promise<void> {
     tx.objectStore(STORES.serviceRecords).clear(),
     tx.objectStore(STORES.documents).clear(),
     tx.objectStore(STORES.documentFiles).clear(),
+    tx.objectStore(STORES.savedCalculations).clear(),
     tx.objectStore(STORES.settings).clear(),
   ]);
   await tx.done;

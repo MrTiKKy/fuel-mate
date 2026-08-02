@@ -51,20 +51,28 @@ export async function updateAppSettings(
 export async function getDatabaseStats(): Promise<DatabaseStats> {
   try {
     const db = await getDatabase();
-    const [cars, fuelEntries, serviceRecords, documents, settings] =
-      await Promise.all([
-        db.getAll(STORES.cars),
-        db.getAll(STORES.fuelEntries),
-        db.getAll(STORES.serviceRecords),
-        db.getAll(STORES.documents),
-        getSettings(),
-      ]);
+    const [
+      cars,
+      fuelEntries,
+      serviceRecords,
+      documents,
+      savedCalculations,
+      settings,
+    ] = await Promise.all([
+      db.getAll(STORES.cars),
+      db.getAll(STORES.fuelEntries),
+      db.getAll(STORES.serviceRecords),
+      db.getAll(STORES.documents),
+      db.getAll(STORES.savedCalculations),
+      getSettings(),
+    ]);
 
     const payload = JSON.stringify({
       cars,
       fuelEntries,
       serviceRecords,
       documents,
+      savedCalculations,
       settings,
     });
 
@@ -73,13 +81,15 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
       cars.length +
       fuelEntries.length +
       serviceRecords.length +
-      documents.length;
+      documents.length +
+      savedCalculations.length;
 
     return {
       cars: cars.length,
       fuelEntries: fuelEntries.length,
       serviceRecords: serviceRecords.length,
       documents: documents.length,
+      savedCalculations: savedCalculations.length,
       estimatedSizeBytes,
       lastBackupAt: settings.lastBackupAt,
       status: total === 0 ? "empty" : "ok",
@@ -90,6 +100,7 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
       fuelEntries: 0,
       serviceRecords: 0,
       documents: 0,
+      savedCalculations: 0,
       estimatedSizeBytes: 0,
       status: "error",
     };

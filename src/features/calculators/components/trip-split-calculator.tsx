@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { FloatingField } from "@/components/shared/floating-field";
 import { CalculatorShell } from "@/features/calculators/components/calculator-shell";
-import { useCalculatorFields } from "@/features/calculators/hooks/use-calculator-fields";
+import { useCalculatorSession } from "@/features/calculators/hooks/use-calculator-session";
 import {
   calcTripSplit,
   formatCalcCurrency,
@@ -18,7 +18,15 @@ const INITIAL = {
 };
 
 export function TripSplitCalculator() {
-  const { values, setField, reset, hasInput } = useCalculatorFields(INITIAL);
+  const {
+    values,
+    setField,
+    reset,
+    hasInput,
+    activeSavedId,
+    activeSavedName,
+    markSaved,
+  } = useCalculatorSession("trip-split", INITIAL);
 
   const results = useMemo(() => {
     const tripCost = parsePositive(values.tripCost);
@@ -76,10 +84,15 @@ export function TripSplitCalculator() {
     <CalculatorShell
       title="Trip cost split"
       subtitle="Share costs fairly"
+      calculatorType="trip-split"
+      inputs={values}
       results={results}
       onReset={reset}
       canReset={hasInput}
       clipboardTitle="Trip cost split"
+      activeSavedId={activeSavedId}
+      activeSavedName={activeSavedName}
+      onSaved={markSaved}
     >
       <FloatingField
         label="Trip cost"

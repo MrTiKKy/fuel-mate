@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { FloatingField } from "@/components/shared/floating-field";
 import { CalculatorShell } from "@/features/calculators/components/calculator-shell";
-import { useCalculatorFields } from "@/features/calculators/hooks/use-calculator-fields";
+import { useCalculatorSession } from "@/features/calculators/hooks/use-calculator-session";
 import {
   calcMaintenance,
   formatCalcCurrency,
@@ -20,7 +20,15 @@ const INITIAL = {
 };
 
 export function MaintenanceCostCalculator() {
-  const { values, setField, reset, hasInput } = useCalculatorFields(INITIAL);
+  const {
+    values,
+    setField,
+    reset,
+    hasInput,
+    activeSavedId,
+    activeSavedName,
+    markSaved,
+  } = useCalculatorSession("maintenance", INITIAL);
 
   const results = useMemo(() => {
     const fuel = parsePositive(values.fuel) ?? 0;
@@ -71,10 +79,15 @@ export function MaintenanceCostCalculator() {
     <CalculatorShell
       title="Maintenance cost"
       subtitle="Monthly ownership spend"
+      calculatorType="maintenance"
+      inputs={values}
       results={results}
       onReset={reset}
       canReset={hasInput}
       clipboardTitle="Maintenance cost"
+      activeSavedId={activeSavedId}
+      activeSavedName={activeSavedName}
+      onSaved={markSaved}
     >
       <FloatingField
         label="Fuel (monthly)"

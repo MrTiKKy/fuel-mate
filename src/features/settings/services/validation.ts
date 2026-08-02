@@ -96,6 +96,24 @@ const documentFileSchema = z.object({
   dataBase64: z.string(),
 });
 
+const savedCalculationSchema = z
+  .object({
+    id: z.string(),
+    calculatorType: z.string(),
+    name: z.string(),
+    inputs: z.record(z.string(), z.string()),
+    results: z.array(
+      z.object({
+        label: z.string(),
+        value: z.string(),
+        emphasize: z.boolean().optional(),
+      }),
+    ),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .passthrough();
+
 export const backupPayloadSchema = z.object({
   version: z.number().int().positive(),
   exportedAt: z.string(),
@@ -113,6 +131,7 @@ export const backupPayloadSchema = z.object({
   serviceRecords: z.array(serviceRecordSchema),
   documents: z.array(documentSchema).default([]),
   documentFiles: z.array(documentFileSchema).optional().default([]),
+  savedCalculations: z.array(savedCalculationSchema).default([]),
   settings: appSettingsSchema,
 });
 

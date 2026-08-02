@@ -83,8 +83,9 @@ export function ServiceFiltersBar({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="upcoming">Upcoming</SelectItem>
             <SelectItem value="overdue">Overdue</SelectItem>
+            <SelectItem value="due_soon">Due soon</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
           </SelectContent>
         </Select>

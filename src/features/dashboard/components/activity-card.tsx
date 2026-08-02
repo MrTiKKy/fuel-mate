@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Car, ChevronRight, Fuel, Wrench } from "lucide-react";
+import { Car, ChevronRight, FileText, Fuel, Wrench } from "lucide-react";
 import type { DashboardActivityItem } from "@/features/dashboard/selectors";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ const ICONS = {
   fuel: Fuel,
   car: Car,
   service: Wrench,
+  document: FileText,
 } as const;
 
 export function ActivityCard({ item, className }: ActivityCardProps) {

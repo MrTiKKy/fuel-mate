@@ -192,7 +192,7 @@ export function buildFuelCostHistory(entries: FuelEntry[]) {
       totalCost: entry.totalCost,
       liters: entry.liters,
       pricePerLiter: entry.pricePerLiter,
-      station: entry.fuelStation,
+      station: undefined,
     }));
 }
 
@@ -204,7 +204,7 @@ export function buildConsumptionHistory(entries: FuelEntry[]) {
       id: entry.id,
       date: entry.date,
       consumption: entry.consumption ?? 0,
-      odometer: entry.odometer,
+      distance: entry.distanceSinceLastRefuel || 0,
       liters: entry.liters,
     }));
 }

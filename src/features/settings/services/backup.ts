@@ -14,13 +14,22 @@ export {
 export async function resetDatabase(): Promise<void> {
   const db = await getDatabase();
   const tx = db.transaction(
-    [STORES.cars, STORES.fuelEntries, STORES.serviceRecords, STORES.settings],
+    [
+      STORES.cars,
+      STORES.fuelEntries,
+      STORES.serviceRecords,
+      STORES.documents,
+      STORES.documentFiles,
+      STORES.settings,
+    ],
     "readwrite",
   );
   await Promise.all([
     tx.objectStore(STORES.cars).clear(),
     tx.objectStore(STORES.fuelEntries).clear(),
     tx.objectStore(STORES.serviceRecords).clear(),
+    tx.objectStore(STORES.documents).clear(),
+    tx.objectStore(STORES.documentFiles).clear(),
     tx.objectStore(STORES.settings).clear(),
   ]);
   await tx.done;
@@ -43,4 +52,17 @@ export async function deleteAllServiceRecords(): Promise<number> {
   await tx.store.clear();
   await tx.done;
   return records.length;
+}
+
+export async function deleteAllDocuments(): Promise<number> {
+  const db = await getDatabase();
+  const documents = await db.getAll(STORES.documents);
+  const tx = db.transaction(
+    [STORES.documents, STORES.documentFiles],
+    "readwrite",
+  );
+  await tx.objectStore(STORES.documents).clear();
+  await tx.objectStore(STORES.documentFiles).clear();
+  await tx.done;
+  return documents.length;
 }

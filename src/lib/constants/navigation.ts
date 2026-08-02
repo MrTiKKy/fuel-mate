@@ -2,8 +2,10 @@ import {
   BarChart3,
   Calculator,
   Car,
+  FileText,
   Fuel,
   Home,
+  Lightbulb,
   Settings,
   Wrench,
   type LucideIcon,
@@ -51,6 +53,18 @@ export const BOTTOM_NAV_ITEMS: NavItem[] = [
 
 export const MORE_MENU_ITEMS: NavItem[] = [
   {
+    title: "Documents",
+    href: "/documents",
+    icon: FileText,
+    description: "Insurance, ITP, licenses and more",
+  },
+  {
+    title: "Insights",
+    href: "/insights",
+    icon: Lightbulb,
+    description: "Personalized vehicle insights",
+  },
+  {
     title: "Calculators",
     href: "/calculators",
     icon: Calculator,
@@ -70,7 +84,8 @@ export const MORE_MENU_ITEMS: NavItem[] = [
   },
 ];
 
-export const APP_NAME = "Car Companion";
+export const APP_NAME = "Garage+";
+export const APP_SHORT_NAME = "Garage+";
 export const APP_DESCRIPTION =
-  "Your offline-first car management companion for fuel, costs, and maintenance.";
-export const APP_VERSION = "1.0.0";
+  "Your offline-first digital garage for vehicles, fuel, documents, service, and insights.";
+export const APP_VERSION = "1.2.0";

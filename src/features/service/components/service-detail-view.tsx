@@ -1,20 +1,17 @@
-import {
-  Calendar,
-  Gauge,
-  MapPin,
-  NotebookPen,
-  Receipt,
-  Wrench,
-} from "lucide-react";
+"use client";
+
+import { Calendar, Bell, NotebookPen, Receipt, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Section } from "@/components/shared/section";
+import { useCurrency } from "@/components/providers/app-settings-provider";
 import {
   calculateServiceStatus,
   formatServiceDate,
   getServiceTypeLabel,
+  normalizeServiceRecord,
 } from "@/features/service/utils";
-import { formatCurrency, formatDistance } from "@/lib/formatters";
+import { formatCurrency } from "@/lib/formatters";
 import { getCarDisplayName } from "@/features/cars/utils";
 import { cn } from "@/lib/utils";
 import type { Car, ServiceRecord } from "@/types";
@@ -22,31 +19,35 @@ import type { Car, ServiceRecord } from "@/types";
 type ServiceDetailViewProps = {
   record: ServiceRecord;
   car?: Car | null;
-  currentOdometer?: number;
+  kmDrivenSince?: number;
   history?: ServiceRecord[];
 };
 
 export function ServiceDetailView({
   record,
   car,
-  currentOdometer,
+  kmDrivenSince,
   history = [],
 }: ServiceDetailViewProps) {
-  const status = calculateServiceStatus(record, { currentOdometer });
+  const currency = useCurrency();
+  const normalized = normalizeServiceRecord(record);
+  const status = calculateServiceStatus(normalized, { kmDrivenSince });
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5">
+      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/90 p-5">
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/10 to-transparent" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="rounded-lg">
-              {getServiceTypeLabel(record.type)}
+              {getServiceTypeLabel(normalized.type)}
             </Badge>
-            <Badge className="rounded-lg capitalize">{status}</Badge>
+            <Badge className="rounded-lg capitalize">
+              {status.replace("_", " ")}
+            </Badge>
           </div>
           <h2 className="mt-3 text-xl font-semibold tracking-tight">
-            {record.title}
+            {normalized.title}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {car ? getCarDisplayName(car) : "Unknown vehicle"}
@@ -54,82 +55,64 @@ export function ServiceDetailView({
         </div>
       </div>
 
-      <DetailSection title="General information">
+      <DetailSection title="Service entry">
         <DetailRow
           icon={Calendar}
-          label="Completed"
-          value={formatServiceDate(record.dateCompleted)}
-        />
-        <Separator />
-        <DetailRow
-          icon={Gauge}
-          label="Odometer"
-          value={formatDistance(record.odometerCompleted)}
+          label="Date completed"
+          value={formatServiceDate(normalized.dateCompleted)}
         />
         <Separator />
         <DetailRow
           icon={Wrench}
           label="Type"
-          value={getServiceTypeLabel(record.type)}
+          value={getServiceTypeLabel(normalized.type)}
         />
-        {record.description ? (
-          <>
-            <Separator />
-            <p className="px-4 py-3.5 text-sm text-muted-foreground">
-              {record.description}
-            </p>
-          </>
-        ) : null}
-      </DetailSection>
-
-      <DetailSection title="Costs">
+        <Separator />
         <DetailRow
           icon={Receipt}
           label="Cost"
-          value={formatCurrency(record.cost)}
-        />
-        <Separator />
-        <DetailRow
-          icon={Receipt}
-          label="Invoice"
-          value={record.invoiceNumber || "—"}
+          value={formatCurrency(normalized.cost, currency)}
         />
       </DetailSection>
 
-      <DetailSection title="Garage">
+      <DetailSection title="Reminder">
         <DetailRow
-          icon={MapPin}
-          label="Garage"
-          value={record.garageName || "—"}
+          icon={Bell}
+          label="Reminder"
+          value={normalized.reminderEnabled ? "Enabled" : "Off"}
         />
-      </DetailSection>
-
-      <DetailSection title="Reminder information">
-        <DetailRow
-          icon={Calendar}
-          label="Next date"
-          value={
-            record.nextDate ? formatServiceDate(record.nextDate) : "—"
-          }
-        />
-        <Separator />
-        <DetailRow
-          icon={Gauge}
-          label="Next odometer"
-          value={
-            record.nextOdometer !== undefined
-              ? formatDistance(record.nextOdometer)
-              : "—"
-          }
-        />
-        {currentOdometer !== undefined ? (
+        {normalized.reminderEnabled ? (
           <>
             <Separator />
             <DetailRow
-              icon={Gauge}
-              label="Current odometer"
-              value={formatDistance(currentOdometer)}
+              icon={Bell}
+              label="Repeat"
+              value={
+                normalized.repeatInterval && normalized.repeatUnit
+                  ? `Every ${normalized.repeatInterval} ${normalized.repeatUnit}`
+                  : "—"
+              }
             />
+            {normalized.nextDate ? (
+              <>
+                <Separator />
+                <DetailRow
+                  icon={Calendar}
+                  label="Next due"
+                  value={formatServiceDate(normalized.nextDate)}
+                />
+              </>
+            ) : null}
+            {normalized.repeatUnit === "kilometers" ? (
+              <>
+                <Separator />
+                <DetailRow
+                  icon={Bell}
+                  label="Km since service"
+                  value={`${Math.round(kmDrivenSince ?? 0)} km`}
+                />
+              </>
+            ) : null}
           </>
         ) : null}
       </DetailSection>
@@ -138,26 +121,26 @@ export function ServiceDetailView({
         <p
           className={cn(
             "flex gap-3 px-4 py-4 text-sm leading-relaxed",
-            record.notes ? "text-foreground" : "text-muted-foreground",
+            normalized.notes ? "text-foreground" : "text-muted-foreground",
           )}
         >
           <NotebookPen className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          {record.notes || "No notes."}
+          {normalized.notes || "No notes."}
         </p>
       </DetailSection>
 
       {history.length > 0 ? (
-        <Section title="History" description="Other services on this vehicle">
+        <Section title="History" description="Other entries on this vehicle">
           <div className="space-y-2">
             {history.map((item) => (
               <div
                 key={item.id}
-                className="rounded-2xl border border-border/70 bg-card px-4 py-3"
+                className="rounded-2xl border border-border/60 bg-card/80 px-4 py-3"
               >
                 <p className="text-sm font-medium">{item.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {formatServiceDate(item.dateCompleted)} ·{" "}
-                  {formatCurrency(item.cost)}
+                  {formatCurrency(item.cost, currency)}
                 </p>
               </div>
             ))}
@@ -176,11 +159,12 @@ function DetailSection({
   children: React.ReactNode;
 }) {
   return (
-    <Section title={title}>
-      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
-        {children}
-      </div>
-    </Section>
+    <section className="overflow-hidden rounded-3xl border border-border/60 bg-card/90">
+      <h3 className="border-b border-border/50 px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        {title}
+      </h3>
+      <div>{children}</div>
+    </section>
   );
 }
 
@@ -189,15 +173,13 @@ function DetailRow({
   label,
   value,
 }: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted/60 text-muted-foreground">
-        <Icon className="size-4" strokeWidth={1.75} />
-      </div>
+      <Icon className="size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="truncate text-sm font-medium">{value}</p>

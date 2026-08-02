@@ -41,7 +41,6 @@ const fuelEntrySchema = z
     id: z.string(),
     carId: z.string(),
     date: z.string(),
-    odometer: z.number(),
     liters: z.number(),
     pricePerLiter: z.number(),
     totalCost: z.number(),
@@ -49,6 +48,8 @@ const fuelEntrySchema = z
     isFullTank: z.boolean(),
     createdAt: z.string(),
     updatedAt: z.string(),
+    distanceSinceLastRefuel: z.number().optional(),
+    odometer: z.number().optional(),
   })
   .passthrough();
 
@@ -59,12 +60,41 @@ const serviceRecordSchema = z
     type: z.string(),
     title: z.string(),
     dateCompleted: z.string(),
-    odometerCompleted: z.number(),
     cost: z.number(),
     createdAt: z.string(),
     updatedAt: z.string(),
+    odometerCompleted: z.number().optional(),
+    reminderEnabled: z.boolean().optional(),
+    repeatInterval: z.number().optional(),
+    repeatUnit: z.enum(["months", "years", "kilometers"]).optional(),
   })
   .passthrough();
+
+const documentSchema = z
+  .object({
+    id: z.string(),
+    vehicleId: z.string(),
+    type: z.string(),
+    title: z.string(),
+    attachments: z.array(z.unknown()).default([]),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    issueDate: z.string().optional(),
+    expiryDate: z.string().optional(),
+    issuer: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  .passthrough();
+
+const documentFileSchema = z.object({
+  id: z.string(),
+  documentId: z.string(),
+  name: z.string(),
+  mimeType: z.string(),
+  size: z.number(),
+  createdAt: z.string(),
+  dataBase64: z.string(),
+});
 
 export const backupPayloadSchema = z.object({
   version: z.number().int().positive(),
@@ -81,6 +111,8 @@ export const backupPayloadSchema = z.object({
   cars: z.array(carSchema),
   fuelEntries: z.array(fuelEntrySchema),
   serviceRecords: z.array(serviceRecordSchema),
+  documents: z.array(documentSchema).default([]),
+  documentFiles: z.array(documentFileSchema).optional().default([]),
   settings: appSettingsSchema,
 });
 

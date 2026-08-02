@@ -42,6 +42,7 @@ export function ImportSummaryDialog({
           <SummaryItem label="Cars" value={summary.cars} />
           <SummaryItem label="Fuel entries" value={summary.fuelEntries} />
           <SummaryItem label="Services" value={summary.serviceRecords} />
+          <SummaryItem label="Documents" value={summary.documents} />
           <SummaryItem
             label="Settings"
             value={summary.settings ? "Yes" : "No"}

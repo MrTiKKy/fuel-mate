@@ -2,17 +2,22 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type {
   AppSettings,
   Car,
+  DocumentFileBlob,
   FuelEntry,
   ServiceRecord,
+  VehicleDocument,
 } from "@/types";
 
+/** Keep legacy DB name so existing local data continues to work. */
 export const DB_NAME = "car-companion";
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export const STORES = {
   cars: "cars",
   fuelEntries: "fuelEntries",
   serviceRecords: "serviceRecords",
+  documents: "documents",
+  documentFiles: "documentFiles",
   settings: "settings",
 } as const;
 
@@ -21,7 +26,7 @@ export type StoreName = (typeof STORES)[keyof typeof STORES];
 export const SETTINGS_KEY = "app";
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  currency: "EUR",
+  currency: "RON",
   distanceUnit: "km",
   volumeUnit: "L",
   consumptionUnit: "l_100km",
@@ -36,7 +41,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
 };
 
-interface CarCompanionDB extends DBSchema {
+interface GaragePlusDB extends DBSchema {
   cars: {
     key: string;
     value: Car;
@@ -56,21 +61,36 @@ interface CarCompanionDB extends DBSchema {
       "by-completed": string;
     };
   };
+  documents: {
+    key: string;
+    value: VehicleDocument;
+    indexes: {
+      "by-vehicle": string;
+      "by-type": string;
+      "by-expiry": string;
+      "by-updated": string;
+    };
+  };
+  documentFiles: {
+    key: string;
+    value: DocumentFileBlob;
+    indexes: { "by-document": string };
+  };
   settings: {
     key: string;
     value: AppSettings & { id: string };
   };
 }
 
-let dbPromise: Promise<IDBPDatabase<CarCompanionDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<GaragePlusDB>> | null = null;
 
-export function getDatabase(): Promise<IDBPDatabase<CarCompanionDB>> {
+export function getDatabase(): Promise<IDBPDatabase<GaragePlusDB>> {
   if (typeof window === "undefined") {
     throw new Error("IndexedDB is only available in the browser");
   }
 
   if (!dbPromise) {
-    dbPromise = openDB<CarCompanionDB>(DB_NAME, DB_VERSION, {
+    dbPromise = openDB<GaragePlusDB>(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion, _newVersion, transaction) {
         if (!db.objectStoreNames.contains(STORES.cars)) {
           const cars = db.createObjectStore(STORES.cars, { keyPath: "id" });
@@ -97,6 +117,23 @@ export function getDatabase(): Promise<IDBPDatabase<CarCompanionDB>> {
           if (!service.indexNames.contains("by-completed")) {
             service.createIndex("by-completed", "dateCompleted");
           }
+        }
+
+        if (!db.objectStoreNames.contains(STORES.documents)) {
+          const docs = db.createObjectStore(STORES.documents, {
+            keyPath: "id",
+          });
+          docs.createIndex("by-vehicle", "vehicleId");
+          docs.createIndex("by-type", "type");
+          docs.createIndex("by-expiry", "expiryDate");
+          docs.createIndex("by-updated", "updatedAt");
+        }
+
+        if (!db.objectStoreNames.contains(STORES.documentFiles)) {
+          const files = db.createObjectStore(STORES.documentFiles, {
+            keyPath: "id",
+          });
+          files.createIndex("by-document", "documentId");
         }
 
         if (!db.objectStoreNames.contains(STORES.settings)) {

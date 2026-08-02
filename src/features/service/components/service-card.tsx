@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { SwipeableRow } from "@/components/shared/swipeable-row";
+import { useCurrency } from "@/components/providers/app-settings-provider";
 import {
   ServiceActionsMenu,
   type ServiceAction,
@@ -12,53 +14,73 @@ import {
   calculateServiceStatus,
   formatServiceDate,
   getServiceTypeLabel,
+  normalizeServiceRecord,
 } from "@/features/service/utils";
-import { formatCurrency, formatDistance } from "@/lib/formatters";
+import { formatCurrency } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { ServiceRecord, ServiceStatus } from "@/types";
 
 type ServiceCardProps = {
   record: ServiceRecord;
-  currentOdometer?: number;
+  kmDrivenSince?: number;
   onAction: (record: ServiceRecord, action: ServiceAction) => void;
 };
 
 const STATUS_STYLES: Record<ServiceStatus, string> = {
   completed: "bg-muted text-muted-foreground",
   upcoming: "bg-primary/15 text-primary",
+  due_soon: "bg-warning/20 text-warning",
   overdue: "bg-destructive/15 text-destructive",
+};
+
+const STATUS_LABELS: Record<ServiceStatus, string> = {
+  completed: "Done",
+  upcoming: "Upcoming",
+  due_soon: "Due soon",
+  overdue: "Overdue",
 };
 
 export function ServiceCard({
   record,
-  currentOdometer,
+  kmDrivenSince,
   onAction,
 }: ServiceCardProps) {
   const router = useRouter();
+  const currency = useCurrency();
   const [menuOpen, setMenuOpen] = useState(false);
-  const status = calculateServiceStatus(record, { currentOdometer });
+  const normalized = normalizeServiceRecord(record);
+  const status = calculateServiceStatus(normalized, { kmDrivenSince });
 
   const longPress = useLongPress({
     onLongPress: () => setMenuOpen(true),
     onClick: () => router.push(`/service/${record.id}`),
   });
 
+  const reminderLabel = !normalized.reminderEnabled
+    ? "No reminder"
+    : normalized.repeatUnit === "kilometers" && normalized.repeatInterval
+      ? `Every ${normalized.repeatInterval} km`
+      : normalized.nextDate
+        ? `Due ${formatServiceDate(normalized.nextDate)}`
+        : normalized.repeatInterval && normalized.repeatUnit
+          ? `Every ${normalized.repeatInterval} ${normalized.repeatUnit}`
+          : "Reminder on";
+
   return (
-    <article
-      className={cn(
-        "relative rounded-2xl border border-border/70 bg-card p-4",
-        "animate-[slide-up_0.4s_cubic-bezier(0.16,1,0.3,1)]",
-        "touch-manipulation select-none active:scale-[0.99]",
-      )}
-      {...longPress}
-    >
-      <div className="absolute bottom-4 left-0 top-4 w-0.5 rounded-full bg-primary/40" />
-      <div className="pl-3">
+    <SwipeableRow onAction={(action) => onAction(record, action)}>
+      <article
+        className={cn(
+          "rounded-3xl border border-border/60 bg-card/90 p-4 backdrop-blur-md",
+          "animate-[slide-up_0.35s_cubic-bezier(0.16,1,0.3,1)]",
+          "touch-manipulation select-none active:scale-[0.99]",
+        )}
+        {...longPress}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="rounded-lg text-[10px]">
-                {getServiceTypeLabel(record.type)}
+                {getServiceTypeLabel(normalized.type)}
               </Badge>
               <Badge
                 className={cn(
@@ -66,11 +88,11 @@ export function ServiceCard({
                   STATUS_STYLES[status],
                 )}
               >
-                {status}
+                {STATUS_LABELS[status]}
               </Badge>
             </div>
             <h3 className="mt-2 text-sm font-semibold tracking-tight">
-              {record.title}
+              {normalized.title}
             </h3>
           </div>
           <div className="pointer-events-auto">
@@ -86,36 +108,30 @@ export function ServiceCard({
         <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
           <Meta
             label="Completed"
-            value={formatServiceDate(record.dateCompleted)}
+            value={formatServiceDate(normalized.dateCompleted)}
           />
           <Meta
-            label="Mileage"
-            value={formatDistance(record.odometerCompleted)}
+            label="Cost"
+            value={formatCurrency(normalized.cost, currency)}
           />
+          <Meta label="Repeat" value={reminderLabel} />
           <Meta
-            label="Next due"
-            value={
-              record.nextDate
-                ? formatServiceDate(record.nextDate)
-                : record.nextOdometer !== undefined
-                  ? formatDistance(record.nextOdometer)
-                  : "—"
-            }
+            label="Notes"
+            value={normalized.notes?.trim() ? "Added" : "—"}
           />
-          <Meta label="Cost" value={formatCurrency(record.cost)} />
         </div>
-      </div>
-    </article>
+      </article>
+    </SwipeableRow>
   );
 }
 
 function Meta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-muted/40 px-2.5 py-2">
+    <div className="rounded-2xl bg-muted/40 px-2.5 py-2">
       <p className="text-[10px] tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
-      <p className="mt-1 font-medium text-foreground">{value}</p>
+      <p className="mt-1 truncate font-medium text-foreground">{value}</p>
     </div>
   );
 }

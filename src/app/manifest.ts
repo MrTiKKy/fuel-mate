@@ -1,15 +1,19 @@
 import type { MetadataRoute } from "next";
-import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants/navigation";
+import {
+  APP_DESCRIPTION,
+  APP_NAME,
+  APP_SHORT_NAME,
+} from "@/lib/constants/navigation";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: APP_NAME,
-    short_name: "CarComp",
+    short_name: APP_SHORT_NAME,
     description: APP_DESCRIPTION,
     start_url: "/",
     display: "standalone",
-  background_color: "#12141a",
-  theme_color: "#12141a",
+    background_color: "#12141a",
+    theme_color: "#12141a",
     orientation: "portrait-primary",
     categories: ["utilities", "lifestyle"],
     icons: [

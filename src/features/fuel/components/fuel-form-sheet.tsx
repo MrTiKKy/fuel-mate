@@ -9,7 +9,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { FuelForm } from "@/features/fuel/components/fuel-form";
-import { getPreviousOdometer } from "@/features/fuel/repository";
 import { fuelEntryToFormValues } from "@/features/fuel/utils";
 import type { FuelEntryFormValues } from "@/lib/validations/fuel";
 import type { Car, FuelEntry } from "@/types";
@@ -32,34 +31,11 @@ export function FuelFormSheet({
   onSubmit,
 }: FuelFormSheetProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [minOdometer, setMinOdometer] = useState<number | undefined>();
-  const [ready, setReady] = useState(false);
   const isEditing = Boolean(entry);
 
   useEffect(() => {
-    if (!open) {
-      setReady(false);
-      return;
-    }
-
-    const carId = entry?.carId ?? defaultCarId ?? cars[0]?.id;
-    if (!carId) {
-      setMinOdometer(undefined);
-      setReady(true);
-      return;
-    }
-
-    let cancelled = false;
-    void getPreviousOdometer(carId, entry?.id).then((value) => {
-      if (cancelled) return;
-      setMinOdometer(value);
-      setReady(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, entry, defaultCarId, cars]);
+    if (!open) setIsSubmitting(false);
+  }, [open]);
 
   const defaults: Partial<FuelEntryFormValues> | undefined = entry
     ? fuelEntryToFormValues(entry)
@@ -69,7 +45,6 @@ export function FuelFormSheet({
         fuelType: cars.find((c) => c.id === (defaultCarId ?? cars[0]?.id))
           ?.fuelType,
         isFullTank: true,
-        odometer: minOdometer?.toString() ?? "",
       };
 
   return (
@@ -86,8 +61,8 @@ export function FuelFormSheet({
           </SheetTitle>
           <SheetDescription>
             {isEditing
-              ? "Update this fill-up. Consumption recalculates for full tanks."
-              : "Log a fill-up. Full tanks unlock consumption between stops."}
+              ? "Update this fill-up. Consumption uses distance since last refuel."
+              : "Log a fill-up with distance since last refuel for consumption."}
           </SheetDescription>
         </SheetHeader>
 
@@ -97,16 +72,11 @@ export function FuelFormSheet({
               <p className="py-10 text-center text-sm text-muted-foreground">
                 Add a vehicle first before logging fuel.
               </p>
-            ) : !ready ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                Preparing form…
-              </p>
             ) : (
               <FuelForm
                 key={entry?.id ?? `new-${defaults?.carId}`}
                 cars={cars}
                 defaultValues={defaults}
-                minOdometer={isEditing ? undefined : minOdometer}
                 submitLabel={isEditing ? "Save changes" : "Add entry"}
                 isSubmitting={isSubmitting}
                 onCancel={() => onOpenChange(false)}
@@ -120,7 +90,8 @@ export function FuelFormSheet({
                   }
                 }}
               />
-            )}          </div>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>

@@ -1,5 +1,7 @@
 import type {
   CreateServiceInput,
+  FuelEntry,
+  RepeatUnit,
   ServiceRecord,
   ServiceReminder,
   ServiceStatus,
@@ -7,7 +9,9 @@ import type {
   ServiceType,
 } from "@/types";
 import type { ServiceFormValues } from "@/lib/validations/service";
+import { parseLocaleNumber } from "@/lib/numbers";
 import { createId } from "@/features/cars/utils";
+import { sumDistanceSince } from "@/features/fuel/utils";
 import {
   SERVICE_TYPE_LABELS,
   UPCOMING_DAY_THRESHOLD,
@@ -15,6 +19,9 @@ import {
 } from "@/features/service/constants";
 
 export { createId };
+
+const DUE_SOON_DAYS = 7;
+const DUE_SOON_KM = 300;
 
 export function getServiceTypeLabel(type: ServiceType) {
   return SERVICE_TYPE_LABELS[type] ?? type;
@@ -43,50 +50,91 @@ function startOfDay(date: Date) {
   return d;
 }
 
+export function computeNextDate(
+  dateCompleted: string,
+  interval: number,
+  unit: RepeatUnit,
+): string | undefined {
+  if (unit === "kilometers") return undefined;
+  const date = new Date(dateCompleted);
+  if (Number.isNaN(date.getTime()) || interval <= 0) return undefined;
+  if (unit === "months") {
+    date.setMonth(date.getMonth() + interval);
+  } else {
+    date.setFullYear(date.getFullYear() + interval);
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+export function normalizeServiceRecord(record: ServiceRecord): ServiceRecord {
+  const reminderEnabled =
+    record.reminderEnabled ??
+    Boolean(record.nextDate || record.nextOdometer || record.repeatInterval);
+
+  return {
+    ...record,
+    reminderEnabled,
+    odometerCompleted: record.odometerCompleted ?? 0,
+    attachments: record.attachments ?? [],
+  };
+}
+
 export type ServiceStatusContext = {
   now?: Date;
-  currentOdometer?: number;
+  /** Kilometers driven since this service entry (fuel distances) */
+  kmDrivenSince?: number;
 };
 
 /**
- * Status rules:
- * - Overdue: past nextDate OR past nextOdometer
- * - Upcoming: within 30 days OR within 1000 km of due
- * - Completed: no upcoming due, or due is further out
+ * Status for a service entry reminder:
+ * - Overdue / Due soon / Upcoming / Completed (no active reminder)
  */
 export function calculateServiceStatus(
-  record: Pick<ServiceRecord, "nextDate" | "nextOdometer">,
+  record: ServiceRecord,
   ctx: ServiceStatusContext = {},
 ): ServiceStatus {
+  const normalized = normalizeServiceRecord(record);
+  if (!normalized.reminderEnabled) return "completed";
+
   const now = ctx.now ?? new Date();
-  const hasDate = Boolean(record.nextDate);
-  const hasOdo = record.nextOdometer !== undefined && record.nextOdometer !== null;
+  const unit = normalized.repeatUnit;
+  const interval = normalized.repeatInterval;
 
-  if (!hasDate && !hasOdo) {
-    return "completed";
+  let daysRemaining: number | null = null;
+  let kmRemaining: number | null = null;
+
+  if (unit === "kilometers" && interval) {
+    const driven = ctx.kmDrivenSince ?? 0;
+    kmRemaining = interval - driven;
+  } else if (normalized.nextDate) {
+    daysRemaining = daysBetween(now, new Date(normalized.nextDate));
+  } else if (normalized.nextOdometer != null && ctx.kmDrivenSince != null) {
+    // Legacy absolute odometer fallback treated as remaining unknown
+    kmRemaining = null;
   }
 
-  let overdue = false;
-  let upcoming = false;
-
-  if (hasDate && record.nextDate) {
-    const due = new Date(record.nextDate);
-    const remaining = daysBetween(now, due);
-    if (remaining < 0) overdue = true;
-    else if (remaining <= UPCOMING_DAY_THRESHOLD) upcoming = true;
+  if (
+    (daysRemaining !== null && daysRemaining < 0) ||
+    (kmRemaining !== null && kmRemaining < 0)
+  ) {
+    return "overdue";
   }
 
-  if (hasOdo && record.nextOdometer !== undefined) {
-    const current = ctx.currentOdometer;
-    if (current !== undefined) {
-      const kmLeft = record.nextOdometer - current;
-      if (kmLeft < 0) overdue = true;
-      else if (kmLeft <= UPCOMING_KM_THRESHOLD) upcoming = true;
-    }
+  if (
+    (daysRemaining !== null && daysRemaining <= DUE_SOON_DAYS) ||
+    (kmRemaining !== null && kmRemaining <= DUE_SOON_KM)
+  ) {
+    return "due_soon";
   }
 
-  if (overdue) return "overdue";
-  if (upcoming) return "upcoming";
+  if (
+    (daysRemaining !== null && daysRemaining <= UPCOMING_DAY_THRESHOLD) ||
+    (kmRemaining !== null && kmRemaining <= UPCOMING_KM_THRESHOLD)
+  ) {
+    return "upcoming";
+  }
+
+  // Reminder scheduled but still far out — treat as completed for list filters
   return "completed";
 }
 
@@ -94,71 +142,70 @@ export function buildServiceReminder(
   record: ServiceRecord,
   ctx: ServiceStatusContext = {},
 ): ServiceReminder | null {
-  const status = calculateServiceStatus(record, ctx);
+  const normalized = normalizeServiceRecord(record);
+  if (!normalized.reminderEnabled) return null;
+
+  const status = calculateServiceStatus(normalized, ctx);
   if (status === "completed") return null;
-  if (!record.nextDate && record.nextOdometer === undefined) return null;
 
   const now = ctx.now ?? new Date();
   let daysRemaining: number | null = null;
   let kmRemaining: number | null = null;
 
-  if (record.nextDate) {
-    daysRemaining = daysBetween(now, new Date(record.nextDate));
-  }
-  if (record.nextOdometer !== undefined && ctx.currentOdometer !== undefined) {
-    kmRemaining = record.nextOdometer - ctx.currentOdometer;
+  if (normalized.repeatUnit === "kilometers" && normalized.repeatInterval) {
+    kmRemaining = normalized.repeatInterval - (ctx.kmDrivenSince ?? 0);
+  } else if (normalized.nextDate) {
+    daysRemaining = daysBetween(now, new Date(normalized.nextDate));
   }
 
   let priority: ServiceReminder["priority"] = "low";
   if (status === "overdue") priority = "high";
-  else if (
-    (daysRemaining !== null && daysRemaining <= 7) ||
-    (kmRemaining !== null && kmRemaining <= 300)
-  ) {
-    priority = "high";
-  } else if (
-    (daysRemaining !== null && daysRemaining <= UPCOMING_DAY_THRESHOLD) ||
-    (kmRemaining !== null && kmRemaining <= UPCOMING_KM_THRESHOLD)
-  ) {
-    priority = "medium";
-  }
+  else if (status === "due_soon") priority = "high";
+  else if (status === "upcoming") priority = "medium";
 
   return {
-    id: `reminder-${record.id}`,
-    carId: record.carId,
-    recordId: record.id,
-    title: record.title,
-    type: record.type,
-    nextDate: record.nextDate,
-    nextOdometer: record.nextOdometer,
+    id: `reminder-${normalized.id}`,
+    carId: normalized.carId,
+    recordId: normalized.id,
+    title: normalized.title,
+    type: normalized.type,
+    nextDate: normalized.nextDate,
+    nextOdometer: normalized.nextOdometer,
     daysRemaining,
     kmRemaining,
     priority,
     status,
+    repeatInterval: normalized.repeatInterval,
+    repeatUnit: normalized.repeatUnit,
   };
 }
 
 export function getUpcomingReminders(
   records: ServiceRecord[],
-  odometerByCar: Record<string, number | undefined> = {},
+  fuelEntries: FuelEntry[] = [],
   now = new Date(),
 ): ServiceReminder[] {
   return records
-    .map((record) =>
-      buildServiceReminder(record, {
-        now,
-        currentOdometer: odometerByCar[record.carId],
-      }),
-    )
+    .map((record) => {
+      const normalized = normalizeServiceRecord(record);
+      const kmDrivenSince = sumDistanceSince(
+        fuelEntries,
+        normalized.carId,
+        normalized.dateCompleted,
+      );
+      return buildServiceReminder(normalized, { now, kmDrivenSince });
+    })
     .filter((item): item is ServiceReminder => item !== null)
     .sort((a, b) => {
-      const priorityRank = { high: 0, medium: 1, low: 2 };
-      if (priorityRank[a.priority] !== priorityRank[b.priority]) {
-        return priorityRank[a.priority] - priorityRank[b.priority];
+      const statusRank = { overdue: 0, due_soon: 1, upcoming: 2 };
+      if (statusRank[a.status] !== statusRank[b.status]) {
+        return statusRank[a.status] - statusRank[b.status];
       }
       const aDays = a.daysRemaining ?? Number.POSITIVE_INFINITY;
       const bDays = b.daysRemaining ?? Number.POSITIVE_INFINITY;
-      return aDays - bDays;
+      const aKm = a.kmRemaining ?? Number.POSITIVE_INFINITY;
+      const bKm = b.kmRemaining ?? Number.POSITIVE_INFINITY;
+      return Math.min(aDays, aKm / 50) - Math.min(bDays, bKm / 50);
     });
 }
 
@@ -235,63 +282,77 @@ export function computeServiceStats(
 export function formValuesToServiceInput(
   values: ServiceFormValues,
 ): CreateServiceInput {
-  const empty = (value: string) => {
-    const trimmed = value.trim();
-    return trimmed ? trimmed : undefined;
-  };
+  const notes = values.notes.trim() || undefined;
+  const interval = values.reminderEnabled
+    ? parseLocaleNumber(values.repeatInterval)
+    : undefined;
+  const unit = values.reminderEnabled ? values.repeatUnit : undefined;
+  const nextDate =
+    values.reminderEnabled && interval && unit
+      ? computeNextDate(values.dateCompleted, interval, unit)
+      : undefined;
 
   return {
     carId: values.carId,
     type: values.type,
     title: values.title.trim(),
-    description: empty(values.description),
     dateCompleted: values.dateCompleted,
-    odometerCompleted: Number(values.odometerCompleted),
-    nextDate: empty(values.nextDate),
-    nextOdometer: values.nextOdometer.trim()
-      ? Number(values.nextOdometer)
-      : undefined,
-    cost: Number(values.cost),
-    garageName: empty(values.garageName),
-    invoiceNumber: empty(values.invoiceNumber),
-    notes: empty(values.notes),
+    cost: parseLocaleNumber(values.cost),
+    notes,
+    reminderEnabled: values.reminderEnabled,
+    repeatInterval:
+      values.reminderEnabled && Number.isFinite(interval)
+        ? interval
+        : undefined,
+    repeatUnit: unit,
+    nextDate,
+    odometerCompleted: 0,
     attachments: [],
   };
 }
 
 export function serviceToFormValues(record: ServiceRecord): ServiceFormValues {
+  const normalized = normalizeServiceRecord(record);
   return {
-    carId: record.carId,
-    type: record.type,
-    title: record.title,
-    description: record.description ?? "",
-    dateCompleted: record.dateCompleted.slice(0, 10),
-    odometerCompleted: record.odometerCompleted.toString(),
-    nextDate: record.nextDate?.slice(0, 10) ?? "",
-    nextOdometer: record.nextOdometer?.toString() ?? "",
-    cost: record.cost.toString(),
-    garageName: record.garageName ?? "",
-    invoiceNumber: record.invoiceNumber ?? "",
-    notes: record.notes ?? "",
+    carId: normalized.carId,
+    type: normalized.type,
+    title: normalized.title,
+    dateCompleted: normalized.dateCompleted.slice(0, 10),
+    cost: normalized.cost.toString(),
+    notes: normalized.notes ?? "",
+    reminderEnabled: normalized.reminderEnabled,
+    repeatInterval: normalized.repeatInterval?.toString() ?? "",
+    repeatUnit: normalized.repeatUnit ?? "months",
   };
 }
 
 export function duplicateServiceInput(
   record: ServiceRecord,
 ): CreateServiceInput {
+  const normalized = normalizeServiceRecord(record);
+  const nextDate =
+    normalized.reminderEnabled &&
+    normalized.repeatInterval &&
+    normalized.repeatUnit
+      ? computeNextDate(
+          new Date().toISOString().slice(0, 10),
+          normalized.repeatInterval,
+          normalized.repeatUnit,
+        )
+      : undefined;
+
   return {
-    carId: record.carId,
-    type: record.type,
-    title: `${record.title} (Copy)`,
-    description: record.description,
+    carId: normalized.carId,
+    type: normalized.type,
+    title: `${normalized.title} (Copy)`,
     dateCompleted: new Date().toISOString().slice(0, 10),
-    odometerCompleted: record.odometerCompleted,
-    nextDate: record.nextDate,
-    nextOdometer: record.nextOdometer,
-    cost: record.cost,
-    garageName: record.garageName,
-    invoiceNumber: undefined,
-    notes: record.notes,
+    cost: normalized.cost,
+    notes: normalized.notes,
+    reminderEnabled: normalized.reminderEnabled,
+    repeatInterval: normalized.repeatInterval,
+    repeatUnit: normalized.repeatUnit,
+    nextDate,
+    odometerCompleted: 0,
     attachments: [],
   };
 }

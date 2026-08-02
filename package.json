@@ -1,6 +1,6 @@
 {
-  "name": "car-companion",
-  "version": "1.0.0",
+  "name": "garage-plus",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

@@ -58,7 +58,7 @@ export function StatsDetails({ snapshot }: StatsDetailsProps) {
                 <div>
                   <p className="font-medium">{formatFuelDate(row.date)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDistance(row.odometer)} · {row.liters.toFixed(1)} L
+                    {formatDistance(row.distance)} · {row.liters.toFixed(1)} L
                   </p>
                 </div>
                 <p className="font-medium">

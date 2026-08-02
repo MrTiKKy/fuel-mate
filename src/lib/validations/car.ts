@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseLocaleNumber } from "@/lib/numbers";
 
 const currentYear = new Date().getFullYear();
 
@@ -35,8 +36,8 @@ function parseOptionalNumber(
   const raw = value?.trim() ?? "";
   if (!raw) return undefined;
 
-  const num = Number(raw);
-  if (Number.isNaN(num)) {
+  const num = parseLocaleNumber(raw);
+  if (!Number.isFinite(num)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Must be a valid number",
@@ -145,7 +146,8 @@ export function parseCarFormValues(values: CarFormValues): CarFormParsed {
   const toNum = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return undefined;
-    return Number(trimmed);
+    const n = parseLocaleNumber(trimmed);
+    return Number.isFinite(n) ? n : undefined;
   };
 
   return {

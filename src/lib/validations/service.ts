@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseLocaleNumber } from "@/lib/numbers";
 
 export const serviceTypeSchema = z.enum([
   "oil_change",
@@ -23,37 +24,23 @@ export const serviceTypeSchema = z.enum([
   "other",
 ]);
 
+export const repeatUnitSchema = z.enum(["months", "years", "kilometers"]);
+
 export const serviceFormSchema = z
   .object({
     carId: z.string().min(1, "Select a vehicle"),
     type: serviceTypeSchema,
     title: z.string().trim().min(1, "Title is required").max(80),
-    description: z.string().max(500),
     dateCompleted: z.string().min(1, "Completion date is required"),
-    odometerCompleted: z.string().min(1, "Odometer is required"),
-    nextDate: z.string(),
-    nextOdometer: z.string(),
     cost: z.string().min(1, "Cost is required"),
-    garageName: z.string().max(80),
-    invoiceNumber: z.string().max(60),
     notes: z.string().max(1000),
+    reminderEnabled: z.boolean(),
+    repeatInterval: z.string(),
+    repeatUnit: repeatUnitSchema,
   })
   .superRefine((data, ctx) => {
-    const odo = Number(data.odometerCompleted);
-    const cost = Number(data.cost);
-    const nextOdo = data.nextOdometer.trim()
-      ? Number(data.nextOdometer)
-      : undefined;
-
-    if (Number.isNaN(odo) || odo < 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Enter a valid odometer",
-        path: ["odometerCompleted"],
-      });
-    }
-
-    if (Number.isNaN(cost) || cost < 0) {
+    const cost = parseLocaleNumber(data.cost);
+    if (!Number.isFinite(cost) || cost < 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Cost must be 0 or greater",
@@ -61,27 +48,15 @@ export const serviceFormSchema = z
       });
     }
 
-    if (
-      nextOdo !== undefined &&
-      (Number.isNaN(nextOdo) || nextOdo < 0)
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Enter a valid next odometer",
-        path: ["nextOdometer"],
-      });
-    }
-
-    if (
-      nextOdo !== undefined &&
-      !Number.isNaN(odo) &&
-      nextOdo < odo
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Next odometer must be ≥ completed mileage",
-        path: ["nextOdometer"],
-      });
+    if (data.reminderEnabled) {
+      const interval = parseLocaleNumber(data.repeatInterval);
+      if (!Number.isFinite(interval) || interval <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Enter a repeat interval",
+          path: ["repeatInterval"],
+        });
+      }
     }
   });
 

@@ -15,7 +15,7 @@ export function OfflinePageClient() {
         <EmptyState
           icon={WifiOff}
           title="No connection"
-          description="Car Companion works offline. Cached pages are still available — reconnect when you can."
+          description="Garage+ works offline. Cached pages are still available — reconnect when you can."
           suggestion="Try Home or any page you already opened — your local data is still here."
           action={
             <Button asChild className="h-11 rounded-xl px-5">

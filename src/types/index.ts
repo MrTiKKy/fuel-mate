@@ -59,15 +59,21 @@ export type FuelEntry = {
   id: UUID;
   carId: UUID;
   date: string;
-  odometer: number;
+  /** Distance driven since previous refuel (km). Used for consumption. */
+  distanceSinceLastRefuel: number;
+  /** @deprecated Legacy absolute odometer — kept for older backups */
+  odometer?: number;
   liters: number;
   pricePerLiter: number;
   totalCost: number;
+  /** @deprecated Removed from form — kept for older backups */
   fuelStation?: string;
   fuelType: FuelType;
   isFullTank: boolean;
-  /** L/100km — set when consecutive full-tank entries allow calculation */
+  /** L/100km — from distance + liters when full tank (or distance present) */
   consumption?: number;
+  costPerKm?: number;
+  costPer100Km?: number;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -113,7 +119,9 @@ export type ServiceType =
   | "road_tax"
   | "other";
 
-export type ServiceStatus = "completed" | "upcoming" | "overdue";
+export type ServiceStatus = "completed" | "upcoming" | "due_soon" | "overdue";
+
+export type RepeatUnit = "months" | "years" | "kilometers";
 
 export type ServiceRecord = {
   id: UUID;
@@ -122,13 +130,19 @@ export type ServiceRecord = {
   title: string;
   description?: string;
   dateCompleted: string;
-  odometerCompleted: number;
+  /** @deprecated Optional legacy mileage */
+  odometerCompleted?: number;
+  /** Recurring reminder configuration */
+  reminderEnabled: boolean;
+  repeatInterval?: number;
+  repeatUnit?: RepeatUnit;
+  /** Derived / stored next due date for month/year repeats */
   nextDate?: string;
+  /** @deprecated Prefer km tracking via fuel distances + repeatInterval */
   nextOdometer?: number;
   cost: number;
   garageName?: string;
   invoiceNumber?: string;
-  /** Placeholder for future file attachments */
   attachments: string[];
   notes?: string;
   createdAt: string;
@@ -155,7 +169,9 @@ export type ServiceReminder = {
   daysRemaining: number | null;
   kmRemaining: number | null;
   priority: "low" | "medium" | "high";
-  status: Extract<ServiceStatus, "upcoming" | "overdue">;
+  status: Extract<ServiceStatus, "upcoming" | "due_soon" | "overdue">;
+  repeatInterval?: number;
+  repeatUnit?: RepeatUnit;
 };
 
 export type ServiceStats = {
@@ -166,6 +182,102 @@ export type ServiceStats = {
   mostCommonServiceCount: number;
   averageYearlyMaintenance: number;
   recordCount: number;
+};
+
+export type DocumentType =
+  | "insurance_rca"
+  | "casco"
+  | "itp"
+  | "vehicle_registration"
+  | "vehicle_identity_card"
+  | "driving_license"
+  | "purchase_invoice"
+  | "service_invoice"
+  | "fuel_receipt"
+  | "tyre_invoice"
+  | "road_tax"
+  | "warranty"
+  | "other";
+
+export type DocumentAttachment = {
+  id: UUID;
+  name: string;
+  mimeType: string;
+  size: number;
+  /** Object URL / blob key resolved at runtime */
+  createdAt: string;
+};
+
+export type VehicleDocument = {
+  id: UUID;
+  vehicleId: UUID;
+  type: DocumentType;
+  title: string;
+  issueDate?: string;
+  expiryDate?: string;
+  issuer?: string;
+  notes?: string;
+  attachments: DocumentAttachment[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateDocumentInput = Omit<
+  VehicleDocument,
+  "id" | "createdAt" | "updatedAt" | "attachments"
+> & {
+  attachments?: DocumentAttachment[];
+};
+
+export type UpdateDocumentInput = Partial<CreateDocumentInput>;
+
+export type DocumentFileBlob = {
+  id: UUID;
+  documentId: UUID;
+  name: string;
+  mimeType: string;
+  size: number;
+  blob: Blob;
+  createdAt: string;
+};
+
+export type DocumentReminder = {
+  id: UUID;
+  documentId: UUID;
+  vehicleId: UUID;
+  title: string;
+  type: DocumentType;
+  expiryDate: string;
+  daysRemaining: number;
+  status: "upcoming" | "due_soon" | "overdue";
+  priority: "low" | "medium" | "high";
+};
+
+export type InsightCategory =
+  | "fuel"
+  | "maintenance"
+  | "expenses"
+  | "documents"
+  | "driving"
+  | "vehicle_health";
+
+export type InsightSeverity = "info" | "positive" | "warning" | "critical";
+
+export type Insight = {
+  id: string;
+  category: InsightCategory;
+  title: string;
+  description: string;
+  severity: InsightSeverity;
+  createdAt: string;
+};
+
+export type InsightsUnlockStatus = {
+  unlocked: boolean;
+  fuelEntries: number;
+  expenses: number;
+  monthsOfData: number;
+  reason?: string;
 };
 
 export type ConsumptionUnit = "l_100km" | "mpg_uk" | "mpg_us";
@@ -203,6 +315,17 @@ export type BackupMetadata = {
   schemaVersion: number;
 };
 
+export type BackupDocumentFile = {
+  id: UUID;
+  documentId: UUID;
+  name: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  /** Base64-encoded binary for portable local backups */
+  dataBase64: string;
+};
+
 export type BackupPayload = {
   version: number;
   exportedAt: string;
@@ -210,6 +333,8 @@ export type BackupPayload = {
   cars: Car[];
   fuelEntries: FuelEntry[];
   serviceRecords: ServiceRecord[];
+  documents: VehicleDocument[];
+  documentFiles?: BackupDocumentFile[];
   settings: AppSettings;
 };
 
@@ -217,6 +342,7 @@ export type ImportSummary = {
   cars: number;
   fuelEntries: number;
   serviceRecords: number;
+  documents: number;
   settings: boolean;
 };
 
@@ -224,6 +350,7 @@ export type DatabaseStats = {
   cars: number;
   fuelEntries: number;
   serviceRecords: number;
+  documents: number;
   estimatedSizeBytes: number;
   lastBackupAt?: string;
   status: "ok" | "empty" | "error";

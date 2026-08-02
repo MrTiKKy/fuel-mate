@@ -5,11 +5,13 @@ import type { Car, ServiceRecord } from "@/types";
 import * as carsRepo from "@/features/cars/repository";
 import * as fuelRepo from "@/features/fuel/repository";
 import * as serviceRepo from "@/features/service/repository";
+import { sumDistanceSince } from "@/features/fuel/utils";
+import { normalizeServiceRecord } from "@/features/service/utils";
 
 export function useServiceRecord(id: string) {
   const [record, setRecord] = useState<ServiceRecord | null>(null);
   const [car, setCar] = useState<Car | null>(null);
-  const [currentOdometer, setCurrentOdometer] = useState<number | undefined>();
+  const [kmDrivenSince, setKmDrivenSince] = useState<number | undefined>();
   const [history, setHistory] = useState<ServiceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -28,19 +30,27 @@ export function useServiceRecord(id: string) {
         return;
       }
 
+      const normalized = normalizeServiceRecord(found);
       const [vehicle, carRecords, fuelEntries] = await Promise.all([
-        carsRepo.getCar(found.carId),
-        serviceRepo.getServiceRecordsByCar(found.carId),
-        fuelRepo.getFuelEntriesByCar(found.carId),
+        carsRepo.getCar(normalized.carId),
+        serviceRepo.getServiceRecordsByCar(normalized.carId),
+        fuelRepo.getFuelEntriesByCar(normalized.carId),
       ]);
 
-      setRecord(found);
+      setRecord(normalized);
       setCar(vehicle ?? null);
-      setHistory(carRecords.filter((r) => r.id !== found.id).slice(0, 8));
-      setCurrentOdometer(
-        fuelEntries.length > 0
-          ? Math.max(...fuelEntries.map((e) => e.odometer))
-          : found.odometerCompleted,
+      setHistory(
+        carRecords
+          .map(normalizeServiceRecord)
+          .filter((r) => r.id !== normalized.id)
+          .slice(0, 8),
+      );
+      setKmDrivenSince(
+        sumDistanceSince(
+          fuelEntries,
+          normalized.carId,
+          normalized.dateCompleted,
+        ),
       );
       setNotFound(false);
     } catch (err) {
@@ -57,7 +67,7 @@ export function useServiceRecord(id: string) {
   return {
     record,
     car,
-    currentOdometer,
+    kmDrivenSince,
     history,
     isLoading,
     notFound,

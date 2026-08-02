@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type {
   Car,
   CreateServiceInput,
+  FuelEntry,
   ServiceRecord,
   UpdateServiceInput,
 } from "@/types";
@@ -22,14 +23,13 @@ import {
   duplicateServiceInput,
   EMPTY_SERVICE_STATS,
   getUpcomingReminders,
+  normalizeServiceRecord,
 } from "@/features/service/utils";
 
 export function useServiceRecords() {
   const [cars, setCars] = useState<Car[]>([]);
   const [records, setRecords] = useState<ServiceRecord[]>([]);
-  const [odometerByCar, setOdometerByCar] = useState<
-    Record<string, number | undefined>
-  >({});
+  const [fuelEntries, setFuelEntries] = useState<FuelEntry[]>([]);
   const [filters, setFilters] = useState<ServiceFilters>(DEFAULT_SERVICE_FILTERS);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,24 +39,15 @@ export function useServiceRecords() {
     setIsLoading(true);
     setError(null);
     try {
-      const [nextCars, nextRecords, fuelEntries] = await Promise.all([
+      const [nextCars, nextRecords, nextFuel] = await Promise.all([
         carsRepo.getCars(),
         serviceRepo.getServiceRecords(),
         fuelRepo.getFuelEntries(),
       ]);
 
-      const odo: Record<string, number | undefined> = {};
-      for (const car of nextCars) {
-        const carFuel = fuelEntries.filter((e) => e.carId === car.id);
-        odo[car.id] =
-          carFuel.length > 0
-            ? Math.max(...carFuel.map((e) => e.odometer))
-            : undefined;
-      }
-
       setCars(nextCars);
-      setRecords(nextRecords);
-      setOdometerByCar(odo);
+      setRecords(nextRecords.map(normalizeServiceRecord));
+      setFuelEntries(nextFuel);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load service");
     } finally {
@@ -69,15 +60,15 @@ export function useServiceRecords() {
   }, [refresh]);
 
   const filtered = useMemo(
-    () => filterServiceRecords(records, filters, odometerByCar),
-    [records, filters, odometerByCar],
+    () => filterServiceRecords(records, filters, fuelEntries),
+    [records, filters, fuelEntries],
   );
 
   const grouped = useMemo(() => groupRecordsByCar(filtered), [filtered]);
 
   const reminders = useMemo(
-    () => getUpcomingReminders(records, odometerByCar),
-    [records, odometerByCar],
+    () => getUpcomingReminders(records, fuelEntries),
+    [records, fuelEntries],
   );
 
   const stats = useMemo(() => computeServiceStats(filtered), [filtered]);
@@ -90,7 +81,7 @@ export function useServiceRecords() {
     async (input: CreateServiceInput) => {
       const record = await serviceRepo.createServiceRecord(input);
       await refresh();
-      toast.success("Service record added");
+      toast.success("Service entry added");
       return record;
     },
     [refresh],
@@ -100,7 +91,7 @@ export function useServiceRecords() {
     async (id: string, input: UpdateServiceInput) => {
       const record = await serviceRepo.updateServiceRecord(id, input);
       await refresh();
-      toast.success("Service record updated");
+      toast.success("Service entry updated");
       return record;
     },
     [refresh],
@@ -110,7 +101,7 @@ export function useServiceRecords() {
     async (id: string) => {
       await serviceRepo.deleteServiceRecord(id);
       await refresh();
-      toast.success("Service record deleted");
+      toast.success("Service entry deleted");
     },
     [refresh],
   );
@@ -121,7 +112,7 @@ export function useServiceRecords() {
         duplicateServiceInput(record),
       );
       await refresh();
-      toast.success("Service record duplicated");
+      toast.success("Service entry duplicated");
       return created;
     },
     [refresh],
@@ -138,11 +129,11 @@ export function useServiceRecords() {
   return {
     cars,
     records,
+    fuelEntries,
     filtered,
     grouped,
     filters,
     updateFilters,
-    odometerByCar,
     reminders,
     stats: filtered.length ? stats : EMPTY_SERVICE_STATS,
     isLoading,

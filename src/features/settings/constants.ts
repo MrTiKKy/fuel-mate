@@ -1,8 +1,8 @@
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "1.2.0";
 export const BUILD_VERSION = "2026.08.02";
-export const BACKUP_SCHEMA_VERSION = 2;
-export const APP_NAME = "Car Companion";
-export const APP_DEVELOPER = "Car Companion Team";
+export const BACKUP_SCHEMA_VERSION = 4;
+export const APP_NAME = "Garage+";
+export const APP_DEVELOPER = "Garage+ Team";
 export const GITHUB_URL = "https://github.com/";
 export const WEBSITE_URL = "https://example.com";
 

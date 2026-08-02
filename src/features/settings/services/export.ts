@@ -1,5 +1,5 @@
 import { getDatabase, STORES, saveSettings } from "@/lib/db";
-import type { BackupPayload } from "@/types";
+import type { BackupDocumentFile, BackupPayload } from "@/types";
 import {
   APP_NAME,
   APP_VERSION,
@@ -20,14 +20,40 @@ function downloadJson(filename: string, data: unknown) {
   URL.revokeObjectURL(url);
 }
 
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
 export async function createBackupPayload(): Promise<BackupPayload> {
   const db = await getDatabase();
-  const [cars, fuelEntries, serviceRecords, settings] = await Promise.all([
-    db.getAll(STORES.cars),
-    db.getAll(STORES.fuelEntries),
-    db.getAll(STORES.serviceRecords),
-    getAppSettings(),
-  ]);
+  const [cars, fuelEntries, serviceRecords, documents, files, settings] =
+    await Promise.all([
+      db.getAll(STORES.cars),
+      db.getAll(STORES.fuelEntries),
+      db.getAll(STORES.serviceRecords),
+      db.getAll(STORES.documents),
+      db.getAll(STORES.documentFiles),
+      getAppSettings(),
+    ]);
+
+  const documentFiles: BackupDocumentFile[] = await Promise.all(
+    files.map(async (file) => ({
+      id: file.id,
+      documentId: file.documentId,
+      name: file.name,
+      mimeType: file.mimeType,
+      size: file.size,
+      createdAt: file.createdAt,
+      dataBase64: await blobToBase64(file.blob),
+    })),
+  );
 
   const exportedAt = new Date().toISOString();
 
@@ -44,13 +70,15 @@ export async function createBackupPayload(): Promise<BackupPayload> {
     cars,
     fuelEntries,
     serviceRecords,
+    documents,
+    documentFiles,
     settings,
   };
 }
 
 export async function exportBackupJson(): Promise<BackupPayload> {
   const payload = await createBackupPayload();
-  downloadJson(`car-companion-backup-${Date.now()}.json`, payload);
+  downloadJson(`garage-plus-backup-${Date.now()}.json`, payload);
   await saveSettings({ lastBackupAt: payload.exportedAt });
   return payload;
 }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/layout/app-shell";
+import { AppSettingsProvider } from "@/components/providers/app-settings-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants/navigation";
 import "./globals.css";
@@ -64,8 +65,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-dvh antialiased`}
       >
         <ThemeProvider>
-          <AppShell>{children}</AppShell>
-          <Toaster richColors position="top-center" closeButton />
+          <AppSettingsProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster richColors position="top-center" closeButton />
+          </AppSettingsProvider>
         </ThemeProvider>
       </body>
     </html>

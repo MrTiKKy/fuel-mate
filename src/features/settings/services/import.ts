@@ -1,5 +1,9 @@
 import { getDatabase, STORES, DEFAULT_SETTINGS } from "@/lib/db";
-import type { AppSettings, ImportSummary } from "@/types";
+import type {
+  AppSettings,
+  DocumentFileBlob,
+  ImportSummary,
+} from "@/types";
 import {
   parseBackupJson,
   type ValidatedBackup,
@@ -21,8 +25,18 @@ export function summarizeBackup(backup: ValidatedBackup): ImportSummary {
     cars: backup.cars.length,
     fuelEntries: backup.fuelEntries.length,
     serviceRecords: backup.serviceRecords.length,
+    documents: backup.documents.length,
     settings: Boolean(backup.settings),
   };
+}
+
+function base64ToBlob(dataBase64: string, mimeType: string): Blob {
+  const binary = atob(dataBase64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mimeType });
 }
 
 export async function importBackup(
@@ -30,7 +44,14 @@ export async function importBackup(
 ): Promise<ImportSummary> {
   const db = await getDatabase();
   const tx = db.transaction(
-    [STORES.cars, STORES.fuelEntries, STORES.serviceRecords, STORES.settings],
+    [
+      STORES.cars,
+      STORES.fuelEntries,
+      STORES.serviceRecords,
+      STORES.documents,
+      STORES.documentFiles,
+      STORES.settings,
+    ],
     "readwrite",
   );
 
@@ -38,6 +59,8 @@ export async function importBackup(
     tx.objectStore(STORES.cars).clear(),
     tx.objectStore(STORES.fuelEntries).clear(),
     tx.objectStore(STORES.serviceRecords).clear(),
+    tx.objectStore(STORES.documents).clear(),
+    tx.objectStore(STORES.documentFiles).clear(),
   ]);
 
   for (const car of backup.cars) {
@@ -48,6 +71,21 @@ export async function importBackup(
   }
   for (const record of backup.serviceRecords) {
     await tx.objectStore(STORES.serviceRecords).put(record as never);
+  }
+  for (const document of backup.documents) {
+    await tx.objectStore(STORES.documents).put(document as never);
+  }
+  for (const file of backup.documentFiles ?? []) {
+    const record: DocumentFileBlob = {
+      id: file.id,
+      documentId: file.documentId,
+      name: file.name,
+      mimeType: file.mimeType,
+      size: file.size,
+      createdAt: file.createdAt,
+      blob: base64ToBlob(file.dataBase64, file.mimeType),
+    };
+    await tx.objectStore(STORES.documentFiles).put(record);
   }
 
   const settings: AppSettings = {

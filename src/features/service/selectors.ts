@@ -1,9 +1,11 @@
 import type {
+  FuelEntry,
   ServiceRecord,
   ServiceReminder,
   ServiceStatus,
   ServiceType,
 } from "@/types";
+import { sumDistanceSince } from "@/features/fuel/utils";
 import {
   calculateServiceStatus,
   getUpcomingReminders,
@@ -28,7 +30,7 @@ export const DEFAULT_SERVICE_FILTERS: ServiceFilters = {
 export function filterServiceRecords(
   records: ServiceRecord[],
   filters: ServiceFilters,
-  odometerByCar: Record<string, number | undefined> = {},
+  fuelEntries: FuelEntry[] = [],
   now = new Date(),
 ): ServiceRecord[] {
   const query = filters.query.trim().toLowerCase();
@@ -41,9 +43,14 @@ export function filterServiceRecords(
       return false;
     }
 
+    const kmDrivenSince = sumDistanceSince(
+      fuelEntries,
+      record.carId,
+      record.dateCompleted,
+    );
     const status = calculateServiceStatus(record, {
       now,
-      currentOdometer: odometerByCar[record.carId],
+      kmDrivenSince,
     });
     if (filters.status !== "all" && status !== filters.status) {
       return false;
@@ -103,8 +110,8 @@ export function groupRecordsByCar(
 
 export function selectDashboardReminders(
   records: ServiceRecord[],
-  odometerByCar: Record<string, number | undefined>,
-  limit = 4,
+  fuelEntries: FuelEntry[],
+  limit = 6,
 ): ServiceReminder[] {
-  return getUpcomingReminders(records, odometerByCar).slice(0, limit);
+  return getUpcomingReminders(records, fuelEntries).slice(0, limit);
 }

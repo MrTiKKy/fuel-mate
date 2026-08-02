@@ -1,8 +1,10 @@
 /** Pure calculator math — no UI side effects. */
 
+import { parseLocaleNumber } from "@/lib/numbers";
+
 export function parsePositive(value: string): number | null {
   if (value.trim() === "") return null;
-  const n = Number(value);
+  const n = parseLocaleNumber(value);
   if (!Number.isFinite(n) || n < 0) return null;
   return n;
 }
@@ -136,8 +138,8 @@ export function formatCalcNumber(
 
 export function formatCalcCurrency(
   value: number,
-  currency = "EUR",
-  locale = "en-US",
+  currency = "RON",
+  locale = "ro-RO",
 ): string {
   if (!Number.isFinite(value)) return "—";
   return new Intl.NumberFormat(locale, {

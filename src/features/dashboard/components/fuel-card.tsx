@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { Droplets, Gauge, MapPin, Route } from "lucide-react";
+import { Droplets, Gauge, Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useCurrency } from "@/components/providers/app-settings-provider";
 import {
   formatConsumptionValue,
   formatFuelDate,
@@ -19,11 +22,13 @@ type FuelCardProps = {
 
 /** Dashboard last-fuel-entry card (not the fuel list card). */
 export function FuelCard({ entry, className }: FuelCardProps) {
+  const currency = useCurrency();
+
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5",
-        "animate-[slide-up_0.4s_cubic-bezier(0.16,1,0.3,1)]",
+        "relative overflow-hidden rounded-3xl border border-border/60 bg-card/90 p-5",
+        "animate-[slide-up_0.35s_cubic-bezier(0.16,1,0.3,1)]",
         className,
       )}
     >
@@ -36,9 +41,8 @@ export function FuelCard({ entry, className }: FuelCardProps) {
           <h3 className="mt-1 text-base font-semibold tracking-tight">
             {formatFuelDate(entry.date)}
           </h3>
-          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="size-3.5" />
-            {entry.fuelStation || "No station"}
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {getFuelTypeLabel(entry.fuelType)}
           </p>
         </div>
         {entry.isFullTank ? (
@@ -49,26 +53,37 @@ export function FuelCard({ entry, className }: FuelCardProps) {
       </div>
 
       <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Metric label="Liters" value={formatLiters(entry.liters)} />
+        <Metric label="Fuel" value={formatLiters(entry.liters)} />
         <Metric
           label="Price / L"
-          value={formatCurrency(entry.pricePerLiter)}
+          value={formatCurrency(entry.pricePerLiter, currency)}
         />
-        <Metric label="Total" value={formatCurrency(entry.totalCost)} />
-        <Metric label="Odometer" value={formatDistance(entry.odometer)} icon={Route} />
+        <Metric
+          label="Total"
+          value={formatCurrency(entry.totalCost, currency)}
+        />
+        <Metric
+          label="Distance"
+          value={formatDistance(entry.distanceSinceLastRefuel || 0)}
+          icon={Route}
+        />
         <Metric
           label="Consumption"
           value={formatConsumptionValue(entry.consumption)}
           icon={Gauge}
         />
         <Metric
-          label="Fuel"
-          value={getFuelTypeLabel(entry.fuelType)}
+          label="Cost / km"
+          value={
+            entry.costPerKm != null
+              ? formatCurrency(entry.costPerKm, currency)
+              : "—"
+          }
           icon={Droplets}
         />
       </div>
 
-      <Button asChild className="mt-5 h-11 w-full rounded-xl">
+      <Button asChild className="mt-5 h-11 w-full rounded-2xl">
         <Link href={`/fuel/${entry.id}`}>View Details</Link>
       </Button>
     </div>
@@ -85,7 +100,7 @@ function Metric({
   icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
 }) {
   return (
-    <div className="rounded-xl bg-muted/40 px-3 py-2.5">
+    <div className="rounded-2xl bg-muted/40 px-3 py-2.5">
       <p className="flex items-center gap-1 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
         {Icon ? <Icon className="size-3" strokeWidth={2} /> : null}
         {label}

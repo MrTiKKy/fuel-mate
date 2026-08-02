@@ -23,7 +23,7 @@ export function SideNav() {
     <aside className="hidden w-64 shrink-0 border-r border-border/50 bg-sidebar backdrop-blur-2xl md:flex md:flex-col">
       <div className="safe-top flex h-[var(--header-height)] items-center gap-2.5 border-b border-border/50 px-5">
         <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary shadow-inner">
-          CC
+          G+
         </span>
         <span className="text-sm font-semibold tracking-tight">{APP_NAME}</span>
       </div>

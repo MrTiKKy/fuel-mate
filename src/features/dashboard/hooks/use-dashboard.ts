@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import * as carsRepo from "@/features/cars/repository";
 import * as fuelRepo from "@/features/fuel/repository";
 import * as serviceRepo from "@/features/service/repository";
+import * as docsRepo from "@/features/documents/repository";
 import {
   buildDashboardSnapshot,
   type DashboardSnapshot,
@@ -20,6 +21,8 @@ const emptySnapshot: DashboardSnapshot = {
   entryCount: 0,
   activities: [],
   upcomingReminders: [],
+  documentReminders: [],
+  missingDocumentTypes: [],
 };
 
 export function useDashboard() {
@@ -37,25 +40,18 @@ export function useDashboard() {
     setError(null);
 
     try {
-      const [cars, activeCar, serviceRecords, allFuel] = await Promise.all([
-        carsRepo.getCars(),
-        carsRepo.getActiveCar(),
-        serviceRepo.getServiceRecords(),
-        fuelRepo.getFuelEntries(),
-      ]);
+      const [cars, activeCar, serviceRecords, allFuel, documents] =
+        await Promise.all([
+          carsRepo.getCars(),
+          carsRepo.getActiveCar(),
+          serviceRepo.getServiceRecords(),
+          fuelRepo.getFuelEntries(),
+          docsRepo.getDocuments(),
+        ]);
 
       const fuelEntries = activeCar
         ? allFuel.filter((e) => e.carId === activeCar.id)
         : [];
-
-      const odometerByCar: Record<string, number | undefined> = {};
-      for (const car of cars) {
-        const carFuel = allFuel.filter((e) => e.carId === car.id);
-        odometerByCar[car.id] =
-          carFuel.length > 0
-            ? Math.max(...carFuel.map((e) => e.odometer))
-            : undefined;
-      }
 
       setData(
         buildDashboardSnapshot({
@@ -63,7 +59,8 @@ export function useDashboard() {
           activeCar: activeCar ?? null,
           fuelEntries,
           serviceRecords,
-          odometerByCar,
+          allFuelEntries: allFuel,
+          documents,
         }),
       );
     } catch (err) {

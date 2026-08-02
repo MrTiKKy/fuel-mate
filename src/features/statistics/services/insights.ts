@@ -22,7 +22,7 @@ export function generateInsights(input: {
   monthly: MonthSeriesPoint[];
   currency?: string;
 }): Insight[] {
-  const { entries, stats, monthly, currency = "EUR" } = input;
+  const { entries, stats, monthly, currency = "RON" } = input;
   const insights: Insight[] = [];
 
   if (entries.length === 0) return insights;
@@ -94,17 +94,16 @@ export function generateInsights(input: {
     });
   }
 
-  const sorted = [...entries].sort((a, b) => a.odometer - b.odometer);
-  let longestGap = 0;
-  for (let i = 1; i < sorted.length; i++) {
-    const gap = sorted[i].odometer - sorted[i - 1].odometer;
-    if (gap > longestGap) longestGap = gap;
-  }
+  const sorted = [...entries].sort(
+    (a, b) =>
+      (b.distanceSinceLastRefuel || 0) - (a.distanceSinceLastRefuel || 0),
+  );
+  const longestGap = sorted[0]?.distanceSinceLastRefuel || 0;
   if (longestGap > 0) {
     insights.push({
       id: "longest-gap",
-      title: `Longest trip between fill-ups was ${formatNumber(longestGap, "en-US", 0)} km`,
-      description: "Based on consecutive odometer readings.",
+      title: `Longest stretch between fill-ups was ${formatNumber(longestGap, "ro-RO", 0)} km`,
+      description: "Based on distance since last refuel.",
       tone: "positive",
     });
   }

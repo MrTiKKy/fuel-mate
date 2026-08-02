@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { normalizeDecimalInput } from "@/lib/numbers";
 import { cn } from "@/lib/utils";
 
 type FloatingFieldProps = {
@@ -24,7 +25,7 @@ export function FloatingField({
   value,
   onChange,
   suffix,
-  type = "number",
+  type = "text",
   inputMode = "decimal",
   min,
   max,
@@ -54,7 +55,13 @@ export function FloatingField({
         aria-label={label}
         onChange={(event) => onChange(event.target.value)}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => {
+          setFocused(false);
+          if (inputMode === "decimal" || inputMode === "numeric") {
+            const normalized = normalizeDecimalInput(value);
+            if (normalized !== value) onChange(normalized);
+          }
+        }}
         className={cn(
           "peer h-14 w-full rounded-2xl border border-border/70 bg-card/60 px-4 pt-5 pb-2 text-base tabular-nums shadow-xs outline-none backdrop-blur-md transition-all duration-200",
           "placeholder:text-transparent",

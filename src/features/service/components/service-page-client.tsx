@@ -18,16 +18,17 @@ import {
   getServiceTypeLabel,
 } from "@/features/service/utils";
 import { formatCurrency } from "@/lib/formatters";
+import { useCurrency } from "@/components/providers/app-settings-provider";
 import type { ServiceFormValues } from "@/lib/validations/service";
 import type { ServiceRecord } from "@/types";
 
 export function ServicePageClient() {
   const {
     cars,
+    fuelEntries,
     grouped,
     filters,
     updateFilters,
-    odometerByCar,
     stats,
     isLoading,
     isPending,
@@ -37,6 +38,8 @@ export function ServicePageClient() {
     duplicateRecord,
     run,
   } = useServiceRecords();
+
+  const currency = useCurrency();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceRecord | null>(null);
@@ -74,11 +77,11 @@ export function ServicePageClient() {
   return (
     <>
       <AppHeader
-        title="Service"
+        title="Service entries"
         subtitle={
           isLoading
             ? "Loading…"
-            : `${stats.recordCount} record${stats.recordCount === 1 ? "" : "s"}`
+            : `${stats.recordCount} entr${stats.recordCount === 1 ? "y" : "ies"}`
         }
       />
 
@@ -97,17 +100,17 @@ export function ServicePageClient() {
                 <div className="grid grid-cols-2 gap-3">
                   <SummaryCard
                     label="Total"
-                    value={formatCurrency(stats.totalMaintenanceCost)}
+                    value={formatCurrency(stats.totalMaintenanceCost, currency)}
                     icon={Wrench}
                   />
                   <SummaryCard
                     label="This month"
-                    value={formatCurrency(stats.costThisMonth)}
+                    value={formatCurrency(stats.costThisMonth, currency)}
                     icon={Droplets}
                   />
                   <SummaryCard
                     label="This year"
-                    value={formatCurrency(stats.costThisYear)}
+                    value={formatCurrency(stats.costThisYear, currency)}
                   />
                   <SummaryCard
                     label="Most common"
@@ -131,7 +134,7 @@ export function ServicePageClient() {
         <ServiceList
           cars={cars}
           grouped={grouped}
-          odometerByCar={odometerByCar}
+          fuelEntries={fuelEntries}
           isLoading={isLoading}
           onAdd={openCreate}
           onAction={handleAction}

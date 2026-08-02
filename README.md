@@ -1,13 +1,14 @@
-# Car Companion
+# Garage+
 
-Production-ready Progressive Web App for mobile-first car management.
+Production-ready Progressive Web App for complete vehicle management.
 
-Offline-first. Dark mode by default. Data stays on device (IndexedDB).
+Offline-first digital garage for fuel, documents, service, costs, and insights.
+Dark mode by default. Data stays on device (IndexedDB).
 
 ## Stack
 
 - Next.js 15 (App Router) · TypeScript · Tailwind CSS · shadcn/ui
-- Lucide React · React Hook Form · Zod · IndexedDB (`idb`) · Recharts
+- Lucide React · React Hook Form · Zod · IndexedDB (`idb`) · Recharts · Framer Motion
 - `@ducanh2912/next-pwa` · ESLint · Prettier
 
 ## Getting started
@@ -30,31 +31,9 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run format` | Prettier |
 | `npm run typecheck` | TypeScript check |
 
-## Structure
+## Features
 
-```
-src/
-  app/                 # Routes (App Router)
-  components/
-    layout/            # Shell, nav, header
-    shared/            # Reusable app components
-    ui/                # shadcn/ui primitives
-    providers/         # Theme, etc.
-  features/            # Feature modules (to be filled in)
-  hooks/
-  lib/
-    constants/
-    db/                # IndexedDB layer (stub)
-    formatters/
-    validations/
-  types/
-public/
-  icons/               # PWA icons
-```
-
-## Features (planned)
-
-- Dashboard · Cars · Fuel Log · Calculators · Statistics
-- Service Tracker · Settings · Backup / Restore
-
-Foundation only — business logic lands feature by feature.
+- Vehicles, fuel log, service entries, statistics
+- Documents vault (insurance, ITP, licenses, invoices)
+- Calculators and local backups
+- Rule-based Insights (no AI, unlocks with enough history)

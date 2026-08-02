@@ -147,7 +147,7 @@ export function useSettings() {
       setPendingImport(null);
       await refresh();
       toast.success(
-        `Imported ${summary.cars} cars, ${summary.fuelEntries} fuel, ${summary.serviceRecords} services`,
+        `Imported ${summary.cars} cars, ${summary.fuelEntries} fuel, ${summary.serviceRecords} services, ${summary.documents} documents`,
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Import failed");

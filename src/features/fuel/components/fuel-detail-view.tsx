@@ -5,7 +5,6 @@ import {
   Droplets,
   Fuel,
   Gauge,
-  MapPin,
   NotebookPen,
   Route,
 } from "lucide-react";
@@ -13,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Section } from "@/components/shared/section";
 import { StatCard } from "@/components/shared/stat-card";
+import { useCurrency } from "@/components/providers/app-settings-provider";
 import {
   formatConsumptionValue,
   formatFuelDate,
@@ -30,9 +30,11 @@ type FuelDetailViewProps = {
 };
 
 export function FuelDetailView({ entry, car }: FuelDetailViewProps) {
+  const currency = useCurrency();
+
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5">
+      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/90 p-5">
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/10 to-transparent" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
@@ -50,11 +52,8 @@ export function FuelDetailView({ entry, car }: FuelDetailViewProps) {
             )}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {car ? getCarDisplayName(car) : "Unknown vehicle"}
-          </p>
-          <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="size-4" />
-            {entry.fuelStation || "No station recorded"}
+            {car ? getCarDisplayName(car) : "Unknown vehicle"} ·{" "}
+            {getFuelTypeLabel(entry.fuelType)}
           </p>
         </div>
       </div>
@@ -63,85 +62,59 @@ export function FuelDetailView({ entry, car }: FuelDetailViewProps) {
         <div className="grid grid-cols-2 gap-3">
           <StatCard
             label="Total cost"
-            value={formatCurrency(entry.totalCost)}
+            value={formatCurrency(entry.totalCost, currency)}
             icon={Droplets}
           />
           <StatCard
-            label="Liters"
+            label="Fuel amount"
             value={formatLiters(entry.liters)}
             icon={Fuel}
+          />
+          <StatCard
+            label="Distance"
+            value={formatDistance(entry.distanceSinceLastRefuel || 0)}
+            icon={Route}
           />
           <StatCard
             label="Consumption"
             value={formatConsumptionValue(entry.consumption)}
             icon={Gauge}
-            hint={entry.consumption ? "Full-to-full" : "Needs full tanks"}
-          />
-          <StatCard
-            label="Odometer"
-            value={formatDistance(entry.odometer)}
-            icon={Route}
+            hint={entry.isFullTank ? "From this fill-up" : "Full tank required"}
           />
         </div>
       </Section>
-
-      <DetailSection title="General">
-        <DetailRow
-          icon={Calendar}
-          label="Date"
-          value={formatFuelDate(entry.date)}
-        />
-        <Separator />
-        <DetailRow
-          icon={MapPin}
-          label="Station"
-          value={entry.fuelStation || "—"}
-        />
-        <Separator />
-        <DetailRow
-          icon={Fuel}
-          label="Fuel type"
-          value={getFuelTypeLabel(entry.fuelType)}
-        />
-        <Separator />
-        <DetailRow
-          icon={Route}
-          label="Odometer"
-          value={formatDistance(entry.odometer)}
-        />
-      </DetailSection>
 
       <DetailSection title="Costs">
         <DetailRow
           icon={Droplets}
           label="Price / L"
-          value={formatCurrency(entry.pricePerLiter)}
+          value={formatCurrency(entry.pricePerLiter, currency)}
         />
         <Separator />
         <DetailRow
-          icon={Fuel}
-          label="Liters"
-          value={formatLiters(entry.liters)}
+          icon={Route}
+          label="Cost / km"
+          value={
+            entry.costPerKm != null
+              ? formatCurrency(entry.costPerKm, currency)
+              : "—"
+          }
         />
         <Separator />
-        <DetailRow
-          icon={Droplets}
-          label="Total cost"
-          value={formatCurrency(entry.totalCost)}
-        />
-      </DetailSection>
-
-      <DetailSection title="Consumption">
         <DetailRow
           icon={Gauge}
-          label="Calculated"
-          value={formatConsumptionValue(entry.consumption)}
+          label="Cost / 100 km"
+          value={
+            entry.costPer100Km != null
+              ? formatCurrency(entry.costPer100Km, currency)
+              : "—"
+          }
         />
         <Separator />
         <DetailRow
-          icon={Fuel}
-          label="Full tank"
-          value={entry.isFullTank ? "Yes" : "No"}
+          icon={Calendar}
+          label="Date"
+          value={formatFuelDate(entry.date)}
         />
       </DetailSection>
 
@@ -168,11 +141,12 @@ function DetailSection({
   children: React.ReactNode;
 }) {
   return (
-    <Section title={title}>
-      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
-        {children}
-      </div>
-    </Section>
+    <section className="overflow-hidden rounded-3xl border border-border/60 bg-card/90">
+      <h3 className="border-b border-border/50 px-4 py-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        {title}
+      </h3>
+      <div>{children}</div>
+    </section>
   );
 }
 
@@ -181,15 +155,13 @@ function DetailRow({
   label,
   value,
 }: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted/60 text-muted-foreground">
-        <Icon className="size-4" strokeWidth={1.75} />
-      </div>
+      <Icon className="size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="truncate text-sm font-medium">{value}</p>

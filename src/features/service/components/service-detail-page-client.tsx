@@ -35,7 +35,7 @@ export function ServiceDetailPageClient({
   recordId,
 }: ServiceDetailPageClientProps) {
   const router = useRouter();
-  const { record, car, currentOdometer, history, isLoading, notFound, refresh } =
+  const { record, car, kmDrivenSince, history, isLoading, notFound, refresh } =
     useServiceRecord(recordId);
   const [cars, setCars] = useState<Car[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -49,7 +49,7 @@ export function ServiceDetailPageClient({
   const handleSubmit = async (values: ServiceFormValues) => {
     if (!record) return;
     await updateServiceRecord(record.id, formValuesToServiceInput(values));
-    toast.success("Service record updated");
+    toast.success("Service entry updated");
     await refresh();
   };
 
@@ -120,7 +120,7 @@ export function ServiceDetailPageClient({
             <ServiceDetailView
               record={record}
               car={car}
-              currentOdometer={currentOdometer}
+              kmDrivenSince={kmDrivenSince}
               history={history}
             />
 

@@ -1,11 +1,11 @@
 /**
- * Formatting helpers — ready for currency, distance, and volume display.
+ * Formatting helpers — currency defaults to RON for first install / Romania-first UX.
  */
 
 export function formatCurrency(
   value: number,
-  currency = "EUR",
-  locale = "en-US",
+  currency = "RON",
+  locale = "ro-RO",
 ): string {
   return new Intl.NumberFormat(locale, {
     style: "currency",
@@ -16,7 +16,7 @@ export function formatCurrency(
 
 export function formatNumber(
   value: number,
-  locale = "en-US",
+  locale = "ro-RO",
   fractionDigits = 1,
 ): string {
   return new Intl.NumberFormat(locale, {
@@ -26,9 +26,9 @@ export function formatNumber(
 }
 
 export function formatDistance(value: number, unit: "km" | "mi" = "km"): string {
-  return `${formatNumber(value, "en-US", 0)} ${unit}`;
+  return `${formatNumber(value, "ro-RO", 0)} ${unit}`;
 }
 
 export function formatVolume(value: number, unit: "L" | "gal" = "L"): string {
-  return `${formatNumber(value, "en-US", 2)} ${unit}`;
+  return `${formatNumber(value, "ro-RO", 2)} ${unit}`;
 }

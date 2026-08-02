@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { ServiceCard } from "@/features/service/components/service-card";
 import type { ServiceAction } from "@/features/service/components/service-actions-menu";
 import { ServiceListSkeleton } from "@/features/service/components/service-skeletons";
+import { sumDistanceSince } from "@/features/fuel/utils";
 import { getCarDisplayName } from "@/features/cars/utils";
-import type { Car as CarType, ServiceRecord } from "@/types";
+import type { Car as CarType, FuelEntry, ServiceRecord } from "@/types";
 
 type ServiceListProps = {
   cars: CarType[];
   grouped: Map<string, ServiceRecord[]>;
-  odometerByCar: Record<string, number | undefined>;
+  fuelEntries: FuelEntry[];
   isLoading: boolean;
   onAdd: () => void;
   onAction: (record: ServiceRecord, action: ServiceAction) => void;
@@ -22,7 +23,7 @@ type ServiceListProps = {
 export function ServiceList({
   cars,
   grouped,
-  odometerByCar,
+  fuelEntries,
   isLoading,
   onAdd,
   onAction,
@@ -34,9 +35,9 @@ export function ServiceList({
       <EmptyState
         icon={Car}
         title="Add a vehicle first"
-        description="Service records belong to a car. Create one, then track maintenance."
+        description="Service entries belong to a car. Create one, then track maintenance."
         action={
-          <Button asChild className="h-11 rounded-xl px-5">
+          <Button asChild className="h-11 rounded-2xl px-5">
             <Link href="/cars">Go to Cars</Link>
           </Button>
         }
@@ -48,11 +49,11 @@ export function ServiceList({
     return (
       <EmptyState
         icon={Wrench}
-        title="No service records"
+        title="No service entries"
         description="Log oil changes, ITP, tyres and more — reminders appear on your dashboard."
         action={
-          <Button className="h-11 rounded-xl px-5" onClick={onAdd}>
-            Add service
+          <Button className="h-11 rounded-2xl px-5" onClick={onAdd}>
+            Add service entry
           </Button>
         }
       />
@@ -62,7 +63,7 @@ export function ServiceList({
   const carOrder = cars.map((c) => c.id);
 
   return (
-    <div className="space-y-8 pb-20 md:pb-8">
+    <div className="space-y-8 pb-24 md:pb-8">
       {carOrder.map((carId) => {
         const records = grouped.get(carId);
         if (!records?.length) return null;
@@ -72,12 +73,16 @@ export function ServiceList({
             <h2 className="text-sm font-semibold tracking-tight">
               {car ? getCarDisplayName(car) : "Vehicle"}
             </h2>
-            <div className="relative space-y-3">
+            <div className="space-y-3">
               {records.map((record) => (
                 <ServiceCard
                   key={record.id}
                   record={record}
-                  currentOdometer={odometerByCar[carId]}
+                  kmDrivenSince={sumDistanceSince(
+                    fuelEntries,
+                    record.carId,
+                    record.dateCompleted,
+                  )}
                   onAction={onAction}
                 />
               ))}

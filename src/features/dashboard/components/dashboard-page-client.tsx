@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import {
-  Calculator,
   Car,
   Droplets,
+  FileText,
   Fuel,
   Gauge,
   Route,
@@ -15,14 +15,19 @@ import { Button } from "@/components/ui/button";
 import { ActivityCard } from "@/features/dashboard/components/activity-card";
 import { DashboardHeader } from "@/features/dashboard/components/dashboard-header";
 import { DashboardSkeleton } from "@/features/dashboard/components/dashboard-skeleton";
+import { DocumentsDashboardSection } from "@/features/dashboard/components/documents-dashboard-section";
 import { EmptyState } from "@/features/dashboard/components/empty-state";
 import { FuelCard } from "@/features/dashboard/components/fuel-card";
+import { InsightsDashboardSection } from "@/features/dashboard/components/insights-dashboard-section";
 import { PullToRefresh } from "@/features/dashboard/components/pull-to-refresh";
 import { QuickActionCard } from "@/features/dashboard/components/quick-action-card";
 import { SectionHeader } from "@/features/dashboard/components/section-header";
 import { SummaryCard } from "@/features/dashboard/components/summary-card";
 import { VehicleCard } from "@/features/dashboard/components/vehicle-card";
+import { ReminderBoard } from "@/features/dashboard/components/reminder-board";
 import { useDashboard } from "@/features/dashboard/hooks/use-dashboard";
+import { useInsights } from "@/features/insights/hooks/use-insights";
+import { useCurrency } from "@/components/providers/app-settings-provider";
 import { formatCurrency, formatDistance, formatNumber } from "@/lib/formatters";
 
 export function DashboardPageClient() {
@@ -35,20 +40,32 @@ export function DashboardPageClient() {
     entryCount,
     activities,
     upcomingReminders,
+    documentReminders,
+    missingDocumentTypes,
     isLoading,
     isRefreshing,
     refresh,
   } = useDashboard();
+  const {
+    unlock,
+    featured,
+    isLoading: insightsLoading,
+    refresh: refreshInsights,
+  } = useInsights();
+  const currency = useCurrency();
 
   const hasCars = cars.length > 0;
   const hasFuel = entryCount > 0;
-  const hasServiceReminders = upcomingReminders.length > 0;
+
+  const handleRefresh = async () => {
+    await Promise.all([refresh(), refreshInsights()]);
+  };
 
   return (
     <>
       <DashboardHeader activeCar={activeCar} />
 
-      <PullToRefresh onRefresh={refresh} isRefreshing={isRefreshing}>
+      <PullToRefresh onRefresh={handleRefresh} isRefreshing={isRefreshing}>
         <PageContainer className="space-y-7 pb-8">
           {isLoading ? <DashboardSkeleton /> : null}
 
@@ -83,10 +100,10 @@ export function DashboardPageClient() {
                     icon={Route}
                   />
                   <QuickActionCard
-                    title="+ Fuel Calculator"
-                    description="Fuel for distance"
-                    href="/calculators/fuel"
-                    icon={Calculator}
+                    title="+ Document"
+                    description="Insurance & more"
+                    href="/documents"
+                    icon={FileText}
                   />
                   <QuickActionCard
                     title="+ Service"
@@ -129,7 +146,7 @@ export function DashboardPageClient() {
                       label="Cost / 100 km"
                       value={
                         overallStats.costPer100Km > 0
-                          ? formatCurrency(overallStats.costPer100Km)
+                          ? formatCurrency(overallStats.costPer100Km, currency)
                           : "—"
                       }
                       hint="Average"
@@ -137,7 +154,7 @@ export function DashboardPageClient() {
                     />
                     <SummaryCard
                       label="Fuel cost"
-                      value={formatCurrency(monthlyStats.totalFuelCost)}
+                      value={formatCurrency(monthlyStats.totalFuelCost, currency)}
                       hint="This month"
                       icon={Fuel}
                     />
@@ -180,7 +197,7 @@ export function DashboardPageClient() {
                   <div className="grid grid-cols-2 gap-3">
                     <SummaryCard
                       label="Fuel cost"
-                      value={formatCurrency(monthlyStats.totalFuelCost)}
+                      value={formatCurrency(monthlyStats.totalFuelCost, currency)}
                     />
                     <SummaryCard
                       label="Distance"
@@ -202,70 +219,18 @@ export function DashboardPageClient() {
                 </section>
               ) : null}
 
-              <section className="space-y-3">
-                <SectionHeader
-                  title="Upcoming service"
-                  action={
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-lg px-2 text-xs"
-                    >
-                      <Link href="/service">See all</Link>
-                    </Button>
-                  }
-                />
-                {hasServiceReminders ? (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {upcomingReminders.map((item) => {
-                      const parts: string[] = [];
-                      if (item.daysRemaining !== null) {
-                        parts.push(
-                          item.daysRemaining < 0
-                            ? `${Math.abs(item.daysRemaining)}d overdue`
-                            : `${item.daysRemaining}d left`,
-                        );
-                      }
-                      if (item.kmRemaining !== null) {
-                        parts.push(
-                          item.kmRemaining < 0
-                            ? `${Math.abs(item.kmRemaining)} km overdue`
-                            : `${item.kmRemaining} km left`,
-                        );
-                      }
-                      return (
-                        <Link
-                          key={item.id}
-                          href={`/service/${item.recordId}`}
-                          className="rounded-2xl border border-border/70 bg-card px-4 py-3.5 transition-colors hover:border-primary/30"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium">{item.title}</p>
-                            <span className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-                              {item.priority}
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {parts.join(" · ") || "Reminder set"}
-                          </p>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <EmptyState
-                    icon={Wrench}
-                    title="No service reminders"
-                    description="Oil change, ITP, insurance, and tyres will show here once you add them."
-                    action={
-                      <Button asChild variant="secondary" className="h-11 rounded-xl px-5">
-                        <Link href="/service">Open Service</Link>
-                      </Button>
-                    }
-                  />
-                )}
-              </section>
+              <ReminderBoard reminders={upcomingReminders} />
+
+              <DocumentsDashboardSection
+                reminders={documentReminders}
+                missingTypes={missingDocumentTypes}
+              />
+
+              <InsightsDashboardSection
+                unlock={unlock}
+                featured={featured}
+                isLoading={insightsLoading}
+              />
 
               <section className="space-y-3">
                 <SectionHeader title="Recent activity" />

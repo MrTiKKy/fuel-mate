@@ -2,7 +2,9 @@
 
 import {
   Calculator,
+  FileText,
   HardDrive,
+  Lightbulb,
   Settings,
   Wrench,
 } from "lucide-react";
@@ -16,6 +18,28 @@ export function MorePageClient() {
     <>
       <AppHeader title="More" subtitle="Tools, service & preferences" />
       <PageContainer className="space-y-6">
+        <Section title="Garage">
+          <div className="grid gap-3">
+            <FeatureCard
+              title="Documents"
+              description="Insurance, ITP, licenses, and invoices"
+              href="/documents"
+              icon={FileText}
+            />
+            <FeatureCard
+              title="Insights"
+              description="Personalized recommendations from your data"
+              href="/insights"
+              icon={Lightbulb}
+            />
+            <FeatureCard
+              title="Service tracker"
+              description="Maintenance history and reminders"
+              href="/service"
+              icon={Wrench}
+            />
+          </div>
+        </Section>
         <Section title="Tools">
           <div className="grid gap-3">
             <FeatureCard
@@ -23,12 +47,6 @@ export function MorePageClient() {
               description="Fuel, trip, ownership, and tank tools"
               href="/calculators"
               icon={Calculator}
-            />
-            <FeatureCard
-              title="Service tracker"
-              description="Maintenance history and reminders"
-              href="/service"
-              icon={Wrench}
             />
           </div>
         </Section>

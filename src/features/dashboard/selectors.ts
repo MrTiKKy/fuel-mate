@@ -1,16 +1,23 @@
 import type {
   Car,
+  DocumentReminder,
+  DocumentType,
   FuelEntry,
   FuelStats,
   ServiceRecord,
   ServiceReminder,
+  VehicleDocument,
 } from "@/types";
 import { computeFuelStats, EMPTY_FUEL_STATS } from "@/features/fuel/utils";
 import { getCarDisplayName } from "@/features/cars/utils";
+import {
+  getDocumentReminders,
+  getMissingImportantTypes,
+} from "@/features/documents/repository";
 import { selectDashboardReminders } from "@/features/service/selectors";
 import { getServiceTypeLabel } from "@/features/service/utils";
 
-export type DashboardActivityType = "fuel" | "car" | "service";
+export type DashboardActivityType = "fuel" | "car" | "service" | "document";
 
 export type DashboardActivityItem = {
   id: string;
@@ -35,6 +42,8 @@ export type DashboardSnapshot = {
   entryCount: number;
   activities: DashboardActivityItem[];
   upcomingReminders: ServiceReminder[];
+  documentReminders: DocumentReminder[];
+  missingDocumentTypes: DocumentType[];
 };
 
 export function getGreeting(now = new Date()): string {
@@ -94,15 +103,14 @@ export function selectRecentActivity(
   cars: Car[],
   fuelEntries: FuelEntry[],
   serviceRecords: ServiceRecord[] = [],
+  documents: VehicleDocument[] = [],
   limit = 8,
 ): DashboardActivityItem[] {
   const fuelActivities: DashboardActivityItem[] = fuelEntries.map((entry) => ({
     id: `fuel-${entry.id}`,
     type: "fuel",
     title: "Fuel entry",
-    subtitle: entry.fuelStation
-      ? `${entry.fuelStation} · ${entry.liters.toFixed(1)} L`
-      : `${entry.liters.toFixed(1)} L · ${entry.totalCost.toFixed(2)}`,
+    subtitle: `${entry.distanceSinceLastRefuel || 0} km · ${entry.liters.toFixed(1)} L`,
     date: entry.createdAt || entry.date,
     href: `/fuel/${entry.id}`,
   }));
@@ -127,7 +135,21 @@ export function selectRecentActivity(
     }),
   );
 
-  return [...fuelActivities, ...carActivities, ...serviceActivities]
+  const documentActivities: DashboardActivityItem[] = documents.map((doc) => ({
+    id: `doc-${doc.id}`,
+    type: "document",
+    title: "Document added",
+    subtitle: doc.title,
+    date: doc.createdAt,
+    href: `/documents/${doc.id}`,
+  }));
+
+  return [
+    ...fuelActivities,
+    ...carActivities,
+    ...serviceActivities,
+    ...documentActivities,
+  ]
     .sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     )
@@ -139,21 +161,21 @@ export function buildDashboardSnapshot(input: {
   activeCar: Car | null;
   fuelEntries: FuelEntry[];
   serviceRecords?: ServiceRecord[];
-  odometerByCar?: Record<string, number | undefined>;
+  allFuelEntries?: FuelEntry[];
+  documents?: VehicleDocument[];
   now?: Date;
 }): DashboardSnapshot {
   const now = input.now ?? new Date();
   const fuelEntries = input.fuelEntries;
   const serviceRecords = input.serviceRecords ?? [];
+  const documents = input.documents ?? [];
+  const allFuel = input.allFuelEntries ?? fuelEntries;
   const overallStats =
     fuelEntries.length > 0 ? computeFuelStats(fuelEntries) : EMPTY_FUEL_STATS;
 
-  const odometerByCar = input.odometerByCar ?? {};
-  if (input.activeCar && fuelEntries.length > 0 && !odometerByCar[input.activeCar.id]) {
-    odometerByCar[input.activeCar.id] = Math.max(
-      ...fuelEntries.map((e) => e.odometer),
-    );
-  }
+  const scopedDocs = input.activeCar
+    ? documents.filter((doc) => doc.vehicleId === input.activeCar!.id)
+    : documents;
 
   return {
     activeCar: input.activeCar,
@@ -167,10 +189,13 @@ export function buildDashboardSnapshot(input: {
       input.cars,
       fuelEntries,
       serviceRecords,
+      documents,
     ),
-    upcomingReminders: selectDashboardReminders(
-      serviceRecords,
-      odometerByCar,
+    upcomingReminders: selectDashboardReminders(serviceRecords, allFuel),
+    documentReminders: getDocumentReminders(scopedDocs, now),
+    missingDocumentTypes: getMissingImportantTypes(
+      scopedDocs,
+      input.activeCar?.id,
     ),
   };
 }

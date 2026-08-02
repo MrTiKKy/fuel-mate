@@ -1,6 +1,7 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
@@ -13,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -20,7 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DecimalInput } from "@/components/shared/decimal-input";
 import { SERVICE_TYPE_OPTIONS } from "@/features/service/constants";
+import { getServiceTypeLabel } from "@/features/service/utils";
 import { getCarDisplayName } from "@/features/cars/utils";
 import {
   serviceFormSchema,
@@ -30,7 +34,7 @@ import { cn } from "@/lib/utils";
 import type { Car } from "@/types";
 
 const fieldClass =
-  "h-12 rounded-xl border-border/80 bg-muted/40 px-4 text-base md:text-base";
+  "h-12 rounded-2xl border-border/80 bg-muted/40 px-4 text-base md:text-base";
 
 type ServiceFormProps = {
   cars: Car[];
@@ -44,7 +48,7 @@ type ServiceFormProps = {
 export function ServiceForm({
   cars,
   defaultValues,
-  submitLabel = "Save service",
+  submitLabel = "Save service entry",
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -54,19 +58,30 @@ export function ServiceForm({
     defaultValues: {
       carId: defaultValues?.carId ?? cars[0]?.id ?? "",
       type: defaultValues?.type ?? "oil_change",
-      title: defaultValues?.title ?? "",
-      description: defaultValues?.description ?? "",
+      title:
+        defaultValues?.title ??
+        getServiceTypeLabel(defaultValues?.type ?? "oil_change"),
       dateCompleted:
         defaultValues?.dateCompleted ?? new Date().toISOString().slice(0, 10),
-      odometerCompleted: defaultValues?.odometerCompleted ?? "",
-      nextDate: defaultValues?.nextDate ?? "",
-      nextOdometer: defaultValues?.nextOdometer ?? "",
       cost: defaultValues?.cost ?? "",
-      garageName: defaultValues?.garageName ?? "",
-      invoiceNumber: defaultValues?.invoiceNumber ?? "",
       notes: defaultValues?.notes ?? "",
+      reminderEnabled: defaultValues?.reminderEnabled ?? false,
+      repeatInterval: defaultValues?.repeatInterval ?? "12",
+      repeatUnit: defaultValues?.repeatUnit ?? "months",
     },
   });
+
+  const type = useWatch({ control: form.control, name: "type" });
+  const reminderEnabled = useWatch({
+    control: form.control,
+    name: "reminderEnabled",
+  });
+
+  useEffect(() => {
+    if (!defaultValues?.title) {
+      form.setValue("title", getServiceTypeLabel(type));
+    }
+  }, [type, form, defaultValues?.title]);
 
   return (
     <Form {...form}>
@@ -75,7 +90,7 @@ export function ServiceForm({
         className="flex flex-col gap-5"
       >
         <section className="space-y-4">
-          <SectionTitle>General</SectionTitle>
+          <SectionTitle>Service entry</SectionTitle>
 
           <FormField
             control={form.control}
@@ -108,24 +123,13 @@ export function ServiceForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Service type</FormLabel>
-                <Select
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    const label = SERVICE_TYPE_OPTIONS.find(
-                      (o) => o.value === value,
-                    )?.label;
-                    if (label && !form.getValues("title")) {
-                      form.setValue("title", label);
-                    }
-                  }}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className={cn(fieldClass, "w-full")}>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent className="max-h-72">
+                  <SelectContent>
                     {SERVICE_TYPE_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -145,39 +149,14 @@ export function ServiceForm({
               <FormItem>
                 <FormLabel>Title</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="e.g. Oil change + filter"
-                    className={fieldClass}
-                    {...field}
-                  />
+                  <Input className={fieldClass} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Optional details…"
-                    className="min-h-20 rounded-xl border-border/80 bg-muted/40 px-4 py-3 text-base"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </section>
-
-        <section className="space-y-4">
-          <SectionTitle>Completed</SectionTitle>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <FormField
               control={form.control}
               name="dateCompleted"
@@ -193,17 +172,19 @@ export function ServiceForm({
             />
             <FormField
               control={form.control}
-              name="odometerCompleted"
+              name="cost"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Odometer (km)</FormLabel>
+                  <FormLabel>Cost</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="100000"
+                    <DecimalInput
+                      placeholder="0"
                       className={fieldClass}
-                      {...field}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                     />
                   </FormControl>
                   <FormMessage />
@@ -211,104 +192,7 @@ export function ServiceForm({
               )}
             />
           </div>
-        </section>
 
-        <section className="space-y-4">
-          <SectionTitle>Next reminder</SectionTitle>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="nextDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Next date</FormLabel>
-                  <FormControl>
-                    <Input type="date" className={fieldClass} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="nextOdometer"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Next odometer</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="115000"
-                      className={fieldClass}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </section>
-
-        <section className="space-y-4">
-          <SectionTitle>Cost & garage</SectionTitle>
-          <FormField
-            control={form.control}
-            name="cost"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cost</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    placeholder="0.00"
-                    className={fieldClass}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="garageName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Garage</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Service center"
-                      className={fieldClass}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="invoiceNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Invoice #</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Optional"
-                      className={fieldClass}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
           <FormField
             control={form.control}
             name="notes"
@@ -317,8 +201,8 @@ export function ServiceForm({
                 <FormLabel>Notes</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Anything to remember…"
-                    className="min-h-24 rounded-xl border-border/80 bg-muted/40 px-4 py-3 text-base"
+                    placeholder="Optional notes…"
+                    className="min-h-24 rounded-2xl border-border/80 bg-muted/40 px-4 py-3 text-base"
                     {...field}
                   />
                 </FormControl>
@@ -328,12 +212,88 @@ export function ServiceForm({
           />
         </section>
 
+        <section className="space-y-4">
+          <SectionTitle>Reminder</SectionTitle>
+
+          <FormField
+            control={form.control}
+            name="reminderEnabled"
+            render={({ field }) => (
+              <FormItem className="flex min-h-14 items-center justify-between rounded-2xl border border-border/70 bg-card/80 px-4 py-3.5">
+                <div>
+                  <FormLabel className="text-sm font-medium">
+                    Enable reminder
+                  </FormLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Notify when this service is due again
+                  </p>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="h-6 w-11"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {reminderEnabled ? (
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="repeatInterval"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Repeat every</FormLabel>
+                    <FormControl>
+                      <DecimalInput
+                        placeholder="12"
+                        className={fieldClass}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="repeatUnit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Repeat by</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className={cn(fieldClass, "w-full")}>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="months">Months</SelectItem>
+                        <SelectItem value="years">Years</SelectItem>
+                        <SelectItem value="kilometers">Kilometers</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          ) : null}
+        </section>
+
         <div className="sticky bottom-0 -mx-1 flex gap-3 bg-background/95 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-sm">
           {onCancel ? (
             <Button
               type="button"
               variant="outline"
-              className="h-12 flex-1 rounded-xl"
+              className="h-12 flex-1 rounded-2xl"
               onClick={onCancel}
               disabled={isSubmitting}
             >
@@ -342,8 +302,9 @@ export function ServiceForm({
           ) : null}
           <Button
             type="submit"
-            className="h-12 flex-1 rounded-xl"
+            className="h-12 flex-1 rounded-2xl"
             disabled={isSubmitting || cars.length === 0}
+            loading={isSubmitting}
           >
             {isSubmitting ? "Saving…" : submitLabel}
           </Button>

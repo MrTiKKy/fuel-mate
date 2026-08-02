@@ -46,6 +46,7 @@ import {
   WEBSITE_URL,
 } from "@/features/settings/constants";
 import { useSettings } from "@/features/settings/hooks/use-settings";
+import { parseLocaleNumber } from "@/lib/numbers";
 import type {
   AccentColor,
   ConsumptionUnit,
@@ -127,7 +128,7 @@ export function SettingsPageClient() {
       await patchSettings({ defaultTankCapacity: undefined });
       return;
     }
-    const parsed = Number(trimmed);
+    const parsed = parseLocaleNumber(trimmed);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       setTankDraft(
         settings.defaultTankCapacity != null
@@ -216,10 +217,8 @@ export function SettingsPageClient() {
                 description="Liters or gallons per your volume unit"
               >
                 <Input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  min={0}
-                  step="0.1"
                   placeholder="—"
                   value={tankValue}
                   onChange={(event) => setTankDraft(event.target.value)}
@@ -425,6 +424,12 @@ export function SettingsPageClient() {
               <SettingsRow label="Service records">
                 <span className="text-sm tabular-nums text-muted-foreground">
                   {stats?.serviceRecords ?? 0}
+                </span>
+              </SettingsRow>
+              <SettingsDivider />
+              <SettingsRow label="Documents">
+                <span className="text-sm tabular-nums text-muted-foreground">
+                  {stats?.documents ?? 0}
                 </span>
               </SettingsRow>
               <SettingsDivider />

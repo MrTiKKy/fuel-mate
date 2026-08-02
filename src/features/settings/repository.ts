@@ -40,34 +40,46 @@ export async function updateAppSettings(
   }
 
   await db.put(STORES.settings, { id: SETTINGS_KEY, ...next });
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("garage-plus:settings-updated"));
+  }
+
   return next;
 }
 
 export async function getDatabaseStats(): Promise<DatabaseStats> {
   try {
     const db = await getDatabase();
-    const [cars, fuelEntries, serviceRecords, settings] = await Promise.all([
-      db.getAll(STORES.cars),
-      db.getAll(STORES.fuelEntries),
-      db.getAll(STORES.serviceRecords),
-      getSettings(),
-    ]);
+    const [cars, fuelEntries, serviceRecords, documents, settings] =
+      await Promise.all([
+        db.getAll(STORES.cars),
+        db.getAll(STORES.fuelEntries),
+        db.getAll(STORES.serviceRecords),
+        db.getAll(STORES.documents),
+        getSettings(),
+      ]);
 
     const payload = JSON.stringify({
       cars,
       fuelEntries,
       serviceRecords,
+      documents,
       settings,
     });
 
     const estimatedSizeBytes = new Blob([payload]).size;
     const total =
-      cars.length + fuelEntries.length + serviceRecords.length;
+      cars.length +
+      fuelEntries.length +
+      serviceRecords.length +
+      documents.length;
 
     return {
       cars: cars.length,
       fuelEntries: fuelEntries.length,
       serviceRecords: serviceRecords.length,
+      documents: documents.length,
       estimatedSizeBytes,
       lastBackupAt: settings.lastBackupAt,
       status: total === 0 ? "empty" : "ok",
@@ -77,6 +89,7 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
       cars: 0,
       fuelEntries: 0,
       serviceRecords: 0,
+      documents: 0,
       estimatedSizeBytes: 0,
       status: "error",
     };

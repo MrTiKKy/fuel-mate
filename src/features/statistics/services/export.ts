@@ -31,7 +31,7 @@ export function exportStatisticsJson(payload: StatsExportPayload) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
     type: "application/json",
   });
-  downloadBlob(`car-companion-stats-${Date.now()}.json`, blob);
+  downloadBlob(`garage-plus-stats-${Date.now()}.json`, blob);
 }
 
 export function exportStatisticsCsv(entries: FuelEntry[]) {
@@ -39,14 +39,15 @@ export function exportStatisticsCsv(entries: FuelEntry[]) {
     "id",
     "carId",
     "date",
-    "odometer",
+    "distanceSinceLastRefuel",
     "liters",
     "pricePerLiter",
     "totalCost",
-    "fuelStation",
     "fuelType",
     "isFullTank",
     "consumption",
+    "costPerKm",
+    "costPer100Km",
     "notes",
   ];
 
@@ -55,14 +56,15 @@ export function exportStatisticsCsv(entries: FuelEntry[]) {
       entry.id,
       entry.carId,
       entry.date,
-      entry.odometer,
+      entry.distanceSinceLastRefuel || 0,
       entry.liters,
       entry.pricePerLiter,
       entry.totalCost,
-      entry.fuelStation ?? "",
       entry.fuelType,
       entry.isFullTank,
       entry.consumption ?? "",
+      entry.costPerKm ?? "",
+      entry.costPer100Km ?? "",
       entry.notes ?? "",
     ]
       .map(csvEscape)
@@ -71,7 +73,7 @@ export function exportStatisticsCsv(entries: FuelEntry[]) {
 
   const csv = [headers.join(","), ...rows].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  downloadBlob(`car-companion-fuel-${Date.now()}.csv`, blob);
+  downloadBlob(`garage-plus-fuel-${Date.now()}.csv`, blob);
 }
 
 /** PDF export placeholder — generation not implemented yet */

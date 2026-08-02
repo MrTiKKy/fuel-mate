@@ -45,6 +45,7 @@ export async function createServiceRecord(
   const now = new Date().toISOString();
   const record: ServiceRecord = {
     ...input,
+    reminderEnabled: input.reminderEnabled ?? false,
     attachments: input.attachments ?? [],
     id: createId(),
     createdAt: now,

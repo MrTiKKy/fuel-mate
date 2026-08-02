@@ -1,0 +1,8 @@
+# See https://nextjs.org/docs/app/building-your-application/configuring/eslint
+
+node_modules
+.next
+out
+build
+public/sw.js
+public/workbox-*.js

@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Car Companion
 
-## Getting Started
+Production-ready Progressive Web App for mobile-first car management.
 
-First, run the development server:
+Offline-first. Dark mode by default. Data stays on device (IndexedDB).
+
+## Stack
+
+- Next.js 15 (App Router) · TypeScript · Tailwind CSS · shadcn/ui
+- Lucide React · React Hook Form · Zod · IndexedDB (`idb`) · Recharts
+- `@ducanh2912/next-pwa` · ESLint · Prettier
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Development server (Turbopack) |
+| `npm run build` | Production build (includes service worker) |
+| `npm run start` | Serve production build |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier |
+| `npm run typecheck` | TypeScript check |
 
-## Learn More
+## Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/                 # Routes (App Router)
+  components/
+    layout/            # Shell, nav, header
+    shared/            # Reusable app components
+    ui/                # shadcn/ui primitives
+    providers/         # Theme, etc.
+  features/            # Feature modules (to be filled in)
+  hooks/
+  lib/
+    constants/
+    db/                # IndexedDB layer (stub)
+    formatters/
+    validations/
+  types/
+public/
+  icons/               # PWA icons
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Features (planned)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Dashboard · Cars · Fuel Log · Calculators · Statistics
+- Service Tracker · Settings · Backup / Restore
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Foundation only — business logic lands feature by feature.

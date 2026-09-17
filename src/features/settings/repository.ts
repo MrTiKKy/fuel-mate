@@ -4,6 +4,7 @@ import {
   SETTINGS_KEY,
   STORES,
 } from "@/lib/db";
+import { maybePushLocalToCloud } from "@/lib/cloud/push-local";
 import type { AppSettings, DatabaseStats } from "@/types";
 
 export async function getAppSettings(): Promise<AppSettings> {
@@ -45,6 +46,7 @@ export async function updateAppSettings(
     window.dispatchEvent(new Event("garage-plus:settings-updated"));
   }
 
+  maybePushLocalToCloud();
   return next;
 }
 

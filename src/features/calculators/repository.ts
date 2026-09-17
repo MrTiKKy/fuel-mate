@@ -1,5 +1,6 @@
 import { getDatabase, STORES } from "@/lib/db";
 import { createId } from "@/features/cars/utils";
+import { maybePushLocalToCloud } from "@/lib/cloud/push-local";
 import type {
   CalculatorType,
   CreateSavedCalculationInput,
@@ -52,6 +53,7 @@ export async function createSavedCalculation(
 
   const db = await getDatabase();
   await db.put(STORES.savedCalculations, record);
+  maybePushLocalToCloud();
   return record;
 }
 
@@ -79,6 +81,7 @@ export async function updateSavedCalculation(
 
   const db = await getDatabase();
   await db.put(STORES.savedCalculations, next);
+  maybePushLocalToCloud();
   return next;
 }
 
@@ -101,4 +104,5 @@ export async function duplicateSavedCalculation(
 export async function deleteSavedCalculation(id: string): Promise<void> {
   const db = await getDatabase();
   await db.delete(STORES.savedCalculations, id);
+  maybePushLocalToCloud();
 }

@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { AppSettingsProvider } from "@/components/providers/app-settings-provider";
+import { AuthGate } from "@/components/providers/auth-gate";
+import { AuthSessionProvider } from "@/components/providers/auth-session-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants/navigation";
 import "./globals.css";
@@ -65,10 +67,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-dvh antialiased`}
       >
         <ThemeProvider>
-          <AppSettingsProvider>
-            <AppShell>{children}</AppShell>
-            <Toaster richColors position="top-center" closeButton />
-          </AppSettingsProvider>
+          <AuthSessionProvider>
+            <AuthGate>
+              <AppSettingsProvider>
+                <AppShell>{children}</AppShell>
+                <Toaster richColors position="top-center" closeButton />
+              </AppSettingsProvider>
+            </AuthGate>
+          </AuthSessionProvider>
         </ThemeProvider>
       </body>
     </html>

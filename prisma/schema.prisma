@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id
+  email        String   @unique
+  name         String?
+  image        String?
+  passwordHash String?  @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  cars               Car[]
+  fuelEntries        FuelEntry[]
+  serviceRecords     ServiceRecord[]
+  documents          Document[]
+  savedCalculations  SavedCalculation[]
+  settings           UserSettings?
+
+  @@map("users")
+}
+
+model Car {
+  id                  String    @id
+  userId              String    @map("user_id")
+  name                String
+  brand               String
+  model               String
+  year                Int?
+  engine              String?
+  fuelType            String    @map("fuel_type")
+  transmission        String?
+  horsepower          Int?
+  tankCapacity        Float?    @map("tank_capacity")
+  averageConsumption  Float?    @map("average_consumption")
+  licensePlate        String?   @map("license_plate")
+  color               String?
+  purchaseDate        DateTime? @map("purchase_date") @db.Date
+  notes               String?
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fuelEntries    FuelEntry[]
+  serviceRecords ServiceRecord[]
+  documents      Document[]
+
+  @@index([userId])
+  @@map("cars")
+}
+
+model FuelEntry {
+  id                       String   @id
+  userId                   String   @map("user_id")
+  carId                    String   @map("car_id")
+  date                     DateTime @db.Date
+  distanceSinceLastRefuel  Float    @map("distance_since_last_refuel")
+  odometer                 Float?
+  liters                   Float
+  pricePerLiter            Float    @map("price_per_liter")
+  totalCost                Float    @map("total_cost")
+  fuelStation              String?  @map("fuel_station")
+  fuelType                 String   @map("fuel_type")
+  isFullTank               Boolean  @map("is_full_tank")
+  consumption              Float?
+  costPerKm                Float?   @map("cost_per_km")
+  costPer100Km             Float?   @map("cost_per_100km")
+  notes                    String?
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([carId])
+  @@map("fuel_entries")
+}
+
+model ServiceRecord {
+  id                 String    @id
+  userId             String    @map("user_id")
+  carId              String    @map("car_id")
+  type               String
+  title              String
+  description        String?
+  dateCompleted      DateTime  @map("date_completed") @db.Date
+  odometerCompleted  Float?    @map("odometer_completed")
+  reminderEnabled    Boolean   @map("reminder_enabled")
+  repeatInterval     Float?    @map("repeat_interval")
+  repeatUnit         String?   @map("repeat_unit")
+  nextDate           DateTime? @map("next_date") @db.Date
+  nextOdometer       Float?    @map("next_odometer")
+  cost               Float
+  garageName         String?   @map("garage_name")
+  invoiceNumber      String?   @map("invoice_number")
+  attachments        Json
+  notes              String?
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car  Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([carId])
+  @@map("service_records")
+}
+
+model Document {
+  id          String    @id
+  userId      String    @map("user_id")
+  vehicleId   String    @map("vehicle_id")
+  type        String
+  title       String
+  issueDate   DateTime? @map("issue_date") @db.Date
+  expiryDate  DateTime? @map("expiry_date") @db.Date
+  issuer      String?
+  notes       String?
+  attachments Json
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  car   Car            @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  files DocumentFile[]
+
+  @@index([userId])
+  @@index([vehicleId])
+  @@map("documents")
+}
+
+model DocumentFile {
+  id         String   @id
+  documentId String   @map("document_id")
+  name       String
+  mimeType   String   @map("mime_type")
+  size       Int
+  storageKey String?  @map("storage_key")
+  data       Bytes?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_files")
+}
+
+model SavedCalculation {
+  id             String   @id
+  userId         String   @map("user_id")
+  calculatorType String   @map("calculator_type")
+  name           String
+  inputs         Json
+  results        Json
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("saved_calculations")
+}
+
+model UserSettings {
+  userId               String    @id @map("user_id")
+  currency             String
+  distanceUnit         String    @map("distance_unit")
+  volumeUnit           String    @map("volume_unit")
+  consumptionUnit      String    @map("consumption_unit")
+  activeCarId          String?   @map("active_car_id")
+  preferredFuelType    String?   @map("preferred_fuel_type")
+  defaultTankCapacity  Float?    @map("default_tank_capacity")
+  theme                String
+  accentColor          String    @map("accent_color")
+  notifications        Json
+  lastBackupAt         DateTime? @map("last_backup_at") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}

@@ -1,3 +1,11 @@
+import { getDatabase, STORES } from "@/lib/db";
+import { createId } from "@/features/cars/utils";
+import {
+  DOCUMENT_DUE_SOON_DAYS,
+  DOCUMENT_TYPE_LABELS,
+  DOCUMENT_UPCOMING_DAYS,
+} from "@/features/documents/constants";
+import { maybePushLocalToCloud } from "@/lib/cloud/push-local";
 import type {
   CreateDocumentInput,
   DocumentAttachment,
@@ -7,13 +15,6 @@ import type {
   UpdateDocumentInput,
   VehicleDocument,
 } from "@/types";
-import { getDatabase, STORES } from "@/lib/db";
-import { createId } from "@/features/cars/utils";
-import {
-  DOCUMENT_DUE_SOON_DAYS,
-  DOCUMENT_TYPE_LABELS,
-  DOCUMENT_UPCOMING_DAYS,
-} from "@/features/documents/constants";
 
 function sortNewest(docs: VehicleDocument[]) {
   return [...docs].sort(
@@ -85,6 +86,7 @@ export async function createDocument(
   };
 
   await db.put(STORES.documents, document);
+  maybePushLocalToCloud();
   return document;
 }
 
@@ -131,6 +133,7 @@ export async function updateDocument(
   };
 
   await db.put(STORES.documents, next);
+  maybePushLocalToCloud();
   return next;
 }
 
@@ -153,6 +156,7 @@ export async function deleteDocument(id: string): Promise<void> {
     await tx.objectStore(STORES.documentFiles).delete(file.id);
   }
   await tx.done;
+  maybePushLocalToCloud();
 }
 
 export async function deleteDocumentAttachment(
@@ -170,6 +174,7 @@ export async function deleteDocumentAttachment(
     updatedAt: new Date().toISOString(),
   };
   await db.put(STORES.documents, next);
+  maybePushLocalToCloud();
   return next;
 }
 

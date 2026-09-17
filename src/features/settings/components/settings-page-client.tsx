@@ -9,11 +9,13 @@ import {
   ExternalLink,
   FileJson,
   Info,
+  LogOut,
   RotateCcw,
   Trash2,
   Upload,
 } from "lucide-react";
 import { format } from "date-fns";
+import { signOut, useSession } from "next-auth/react";
 import { AppHeader } from "@/components/layout/app-header";
 import { PageContainer } from "@/components/shared/page-container";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +65,7 @@ type DangerAction = "reset" | "fuel" | "service" | null;
 const NONE_VEHICLE = "__none__";
 
 export function SettingsPageClient() {
+  const { data: session } = useSession();
   const {
     settings,
     cars,
@@ -476,6 +479,28 @@ export function SettingsPageClient() {
                   description="Keep vehicles and fuel log"
                   onClick={() => setDangerAction("service")}
                 />
+              </div>
+            </SettingsSection>
+
+            <SettingsSection title="Account">
+              <SettingsRow label="Signed in as">
+                <span className="max-w-[14rem] truncate text-sm text-muted-foreground">
+                  {session?.user?.email ?? "—"}
+                </span>
+              </SettingsRow>
+              <SettingsDivider />
+              <div className="p-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full rounded-2xl"
+                  onClick={() =>
+                    void signOut({ callbackUrl: "/" })
+                  }
+                >
+                  <LogOut className="size-4" />
+                  Sign out
+                </Button>
               </div>
             </SettingsSection>
 

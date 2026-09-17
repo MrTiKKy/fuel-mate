@@ -10,6 +10,7 @@ import {
   createId,
   normalizeFuelEntry,
 } from "@/features/fuel/utils";
+import { maybePushLocalToCloud } from "@/lib/cloud/push-local";
 
 function sortByNewest(entries: FuelEntry[]) {
   return [...entries].sort((a, b) => {
@@ -73,6 +74,7 @@ export async function createFuelEntry(
   };
 
   await db.put(STORES.fuelEntries, entry);
+  maybePushLocalToCloud();
   return entry;
 }
 
@@ -104,6 +106,7 @@ export async function updateFuelEntry(
   };
 
   await db.put(STORES.fuelEntries, next);
+  maybePushLocalToCloud();
   return next;
 }
 
@@ -116,6 +119,7 @@ export async function deleteFuelEntry(id: string): Promise<void> {
   }
 
   await db.delete(STORES.fuelEntries, id);
+  maybePushLocalToCloud();
 }
 
 /** Total distance logged for a car (sum of trip distances). */

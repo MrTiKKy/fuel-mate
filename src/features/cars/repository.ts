@@ -1,6 +1,7 @@
 import { getDatabase, getSettings, saveSettings, STORES } from "@/lib/db";
 import type { Car, CreateCarInput, UpdateCarInput } from "@/types";
 import { createId } from "@/features/cars/utils";
+import { maybePushLocalToCloud } from "@/lib/cloud/push-local";
 
 function sortByUpdatedDesc(cars: Car[]) {
   return [...cars].sort(
@@ -36,6 +37,7 @@ export async function createCar(input: CreateCarInput): Promise<Car> {
     await saveSettings({ activeCarId: car.id });
   }
 
+  maybePushLocalToCloud();
   return car;
 }
 
@@ -59,6 +61,7 @@ export async function updateCar(
   };
 
   await db.put(STORES.cars, updated);
+  maybePushLocalToCloud();
   return updated;
 }
 
@@ -79,6 +82,7 @@ export async function deleteCar(id: string): Promise<void> {
       activeCarId: remaining[0]?.id,
     });
   }
+  maybePushLocalToCloud();
 }
 
 export async function setActiveCar(id: string): Promise<void> {
@@ -87,6 +91,7 @@ export async function setActiveCar(id: string): Promise<void> {
     throw new Error("Vehicle not found");
   }
   await saveSettings({ activeCarId: id });
+  maybePushLocalToCloud();
 }
 
 export async function getActiveCar(): Promise<Car | undefined> {

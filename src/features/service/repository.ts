@@ -5,6 +5,7 @@ import type {
   UpdateServiceInput,
 } from "@/types";
 import { createId } from "@/features/service/utils";
+import { maybePushLocalToCloud } from "@/lib/cloud/push-local";
 
 function sortNewest(records: ServiceRecord[]) {
   return [...records].sort(
@@ -52,6 +53,7 @@ export async function createServiceRecord(
     updatedAt: now,
   };
   await db.put(STORES.serviceRecords, record);
+  maybePushLocalToCloud();
   return record;
 }
 
@@ -75,6 +77,7 @@ export async function updateServiceRecord(
   };
 
   await db.put(STORES.serviceRecords, updated);
+  maybePushLocalToCloud();
   return updated;
 }
 
@@ -85,4 +88,5 @@ export async function deleteServiceRecord(id: string): Promise<void> {
     throw new Error("Service record not found");
   }
   await db.delete(STORES.serviceRecords, id);
+  maybePushLocalToCloud();
 }
